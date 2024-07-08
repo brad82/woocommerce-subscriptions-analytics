@@ -1,0 +1,80 @@
+name: Build + Package
+
+on:
+    push:
+        branches: ['main']
+    pull_request:
+        branches: ['main']
+
+permissions:
+    contents: read
+
+jobs:
+    build-php:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Validate composer.json and composer.lock
+              run: composer validate --strict
+
+            - name: Cache Composer packages
+              id: composer-cache
+              uses: actions/cache@v3
+              with:
+                  path: vendor
+                  key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-php-
+
+            - name: Install dependencies
+              run: composer install --prefer-dist --no-progress
+
+            - name: Upload a Build Artifact
+              uses: actions/upload-artifact@v4.3.4
+              with:
+                  name: vendor
+                  path: vendor/**
+
+    build-client:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Use Node.js 20.15
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.15
+
+            - name: Build
+              run: |
+                  npm install
+                  npm run build
+
+            - name: Upload a Build Artifact
+              uses: actions/upload-artifact@v4.3.4
+              with:
+                  name: client
+                  path: build/**
+
+    package-plugin:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Use Node.js 20.15
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.15
+
+            - name: Package
+              run: |
+                  npm install
+                  npm plugin-zip
+
+            - name: Upload a Build Artifact
+              uses: actions/upload-artifact@v4.3.4
+              with:
+                  name: woocommerce-subscriptions-analytics.zip
+                  path: woocommerce-subscriptions-analytics.zip
