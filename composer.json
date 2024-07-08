@@ -1,0 +1,22 @@
+{
+	"name": "extension/woocommerce-subscriptions-analytics",
+	"description": "WooCommerce plugin",
+	"autoload": {
+		"psr-4": {
+			"SOS\\Analytics\\": "includes/"
+		}
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^9.0",
+		"automattic/jetpack-autoloader": "^2",
+		"wp-coding-standards/wpcs": "^3.0",
+		"woocommerce/woocommerce-sniffs": "^1.0",
+		"php-stubs/woocommerce-stubs": "^9.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"automattic/jetpack-autoloader": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "extension/woocommerce-subscriptions-analytics",
+	"version": "0.1.0",
+	"title": "Woocommerce Subscriptions Analytics",
+	"category": "widgets",
+	"textdomain": "woocommerce-subscriptions-analytics",
+	"editorScript": "file:./build/index.js",
+	"editorStyle": "file:./build/index.css",
+	"style": "file:./build/style-index.css"
+}
