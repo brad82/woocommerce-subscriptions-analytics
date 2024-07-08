@@ -2,9 +2,10 @@
 
 /**
  * Plugin Name: Woocommerce Subscriptions Analytics
+ * Description: Adds extended analytics to WooCommerce for Subscriptions
  * Version: 0.1.0
- * Author: The WordPress Contributors
- * Author URI: https://woo.com
+ * Author: Supreme Online Solutions
+ * Author URI: https://supremeonline.solutions
  * Text Domain: woocommerce-subscriptions-analytics
  * Domain Path: /languages
  *

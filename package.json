@@ -2,7 +2,7 @@
 	"name": "woocommerce-subscriptions-analytics",
 	"version": "0.1.0",
 	"author": "The WordPress Contributors",
-	"license": "GPL-3.0+",
+	"license": "GPL-2.0-only",
 	"main": "build/index.js",
 	"scripts": {
 		"build": "wp-scripts build",

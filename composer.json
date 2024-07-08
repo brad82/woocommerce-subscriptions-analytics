@@ -1,6 +1,7 @@
 {
 	"name": "extension/woocommerce-subscriptions-analytics",
 	"description": "WooCommerce plugin",
+	"license": "GPL-2.0-only",
 	"autoload": {
 		"psr-4": {
 			"SOS\\Analytics\\": "includes/"
