@@ -112,7 +112,7 @@ class RenewalsReportTable extends Component {
 	}
 
 	getSummary( totals, totalResults = 0 ) {
-		const { revenue: revenue, renewal_count: totalRenewals } = totals;
+		const { revenue, renewal_count } = totals;
 		const { formatAmount, getCurrencyConfig } = this.context;
 		const currency = getCurrencyConfig();
 		return [
@@ -122,7 +122,7 @@ class RenewalsReportTable extends Component {
 			},
 			{
 				label: __( 'Total Renewals', 'sos-analytics' ),
-				value: parseInt( totalRenewals ),
+				value: parseInt( renewal_count ),
 			},
 		];
 	}

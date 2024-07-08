@@ -67,197 +67,6 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	protected $context = 'renewals_stats';
 
 	/**
-	 * Dynamically sets the date column name based on configuration
-	 */
-	public function __construct() {
-		$this->date_column_name = get_option( 'woocommerce_date_type', 'date_paid' );
-		parent::__construct();
-	}
-
-	/**
-	 * Assign report columns once full table name has been assigned.
-	 */
-	protected function assign_report_columns() {
-		$table_name = self::get_db_table_name();
-		// Avoid ambigious columns in SQL query.
-		$refunds     = "ABS( SUM( CASE WHEN {$table_name}.net_total < 0 THEN {$table_name}.net_total ELSE 0 END ) )";
-		$gross_sales =
-			"( SUM({$table_name}.total_sales)" .
-			' + COALESCE( SUM(discount_amount), 0 )' . // SUM() all nulls gives null.
-			" - SUM({$table_name}.tax_total)" .
-			" - SUM({$table_name}.shipping_total)" .
-			" + {$refunds}" .
-			' ) as gross_sales';
-
-		$this->report_columns = array(
-			'renewals_count'      => "SUM( CASE WHEN {$table_name}.parent_id = 0 THEN 1 ELSE 0 END ) as renewals_count",
-			'num_items_sold'      => "SUM({$table_name}.num_items_sold) as num_items_sold",
-			'gross_sales'         => $gross_sales,
-			'total_sales'         => "SUM({$table_name}.total_sales) AS total_sales",
-			'coupons'             => 'COALESCE( SUM(discount_amount), 0 ) AS coupons', // SUM() all nulls gives null.
-			'coupons_count'       => 'COALESCE( coupons_count, 0 ) as coupons_count',
-			'refunds'             => "{$refunds} AS refunds",
-			'taxes'               => "SUM({$table_name}.tax_total) AS taxes",
-			'shipping'            => "SUM({$table_name}.shipping_total) AS shipping",
-			'net_revenue'         => "SUM({$table_name}.net_total) AS net_revenue",
-			'avg_items_per_order' => "SUM( {$table_name}.num_items_sold ) / SUM( CASE WHEN {$table_name}.parent_id = 0 THEN 1 ELSE 0 END ) AS avg_items_per_order",
-			'avg_order_value'     => "SUM( {$table_name}.net_total ) / SUM( CASE WHEN {$table_name}.parent_id = 0 THEN 1 ELSE 0 END ) AS avg_order_value",
-			'total_customers'     => "COUNT( DISTINCT( {$table_name}.customer_id ) ) as total_customers",
-		);
-	}
-
-	/**
-	 * Set up all the hooks for maintaining and populating table data.
-	 */
-	public static function init() {
-		add_action( 'woocommerce_before_delete_order', array( __CLASS__, 'delete_order' ) );
-		add_action( 'delete_post', array( __CLASS__, 'delete_order' ) );
-	}
-
-	/**
-	 * Updates the totals and intervals database queries with parameters used for Renewals report: categories, coupons and order status.
-	 *
-	 * @param array $query_args      Query arguments supplied by the user.
-	 */
-	protected function renewals_stats_sql_filter( $query_args ) {
-		// phpcs:ignore Generic.Commenting.Todo.TaskFound
-		// @todo Performance of all of this?
-		global $wpdb;
-
-		$from_clause          = '';
-		$renewals_stats_table = self::get_db_table_name();
-		$product_lookup       = $wpdb->prefix . 'wc_order_product_lookup';
-		$coupon_lookup        = $wpdb->prefix . 'wc_order_coupon_lookup';
-		$tax_rate_lookup      = $wpdb->prefix . 'wc_order_tax_lookup';
-		$operator             = $this->get_match_operator( $query_args );
-
-		$where_filters = array();
-
-		// Products filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$product_lookup,
-			'product_id',
-			'IN',
-			$this->get_included_products( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$product_lookup,
-			'product_id',
-			'NOT IN',
-			$this->get_excluded_products( $query_args )
-		);
-
-		// Variations filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$product_lookup,
-			'variation_id',
-			'IN',
-			$this->get_included_variations( $query_args )
-		);
-
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$product_lookup,
-			'variation_id',
-			'NOT IN',
-			$this->get_excluded_variations( $query_args )
-		);
-
-		// Coupons filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$coupon_lookup,
-			'coupon_id',
-			'IN',
-			$this->get_included_coupons( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$coupon_lookup,
-			'coupon_id',
-			'NOT IN',
-			$this->get_excluded_coupons( $query_args )
-		);
-
-		// Tax rate filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$tax_rate_lookup,
-			'tax_rate_id',
-			'IN',
-			implode( ',', $query_args['tax_rate_includes'] )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$renewals_stats_table,
-			'order_id',
-			$tax_rate_lookup,
-			'tax_rate_id',
-			'NOT IN',
-			implode( ',', $query_args['tax_rate_excludes'] )
-		);
-
-		// Product attribute filters.
-		$attribute_subqueries = $this->get_attribute_subqueries( $query_args );
-		if ( $attribute_subqueries['join'] && $attribute_subqueries['where'] ) {
-			// Build a subquery for getting order IDs by product attribute(s).
-			// Done here since our use case is a little more complicated than get_object_where_filter() can handle.
-			$attribute_subquery = new SqlQuery();
-			$attribute_subquery->add_sql_clause( 'select', "{$renewals_stats_table}.order_id" );
-			$attribute_subquery->add_sql_clause( 'from', $renewals_stats_table );
-
-			// JOIN on product lookup.
-			$attribute_subquery->add_sql_clause( 'join', "JOIN {$product_lookup} ON {$renewals_stats_table}.order_id = {$product_lookup}.order_id" );
-
-			// Add JOINs for matching attributes.
-			foreach ( $attribute_subqueries['join'] as $attribute_join ) {
-				$attribute_subquery->add_sql_clause( 'join', $attribute_join );
-			}
-			// Add WHEREs for matching attributes.
-			$attribute_subquery->add_sql_clause( 'where', 'AND (' . implode( " {$operator} ", $attribute_subqueries['where'] ) . ')' );
-
-			// Generate subquery statement and add to our where filters.
-			$where_filters[] = "{$renewals_stats_table}.order_id IN (" . $attribute_subquery->get_query_statement() . ')';
-		}
-
-		$where_filters[] = $this->get_customer_subquery( $query_args );
-		$refund_subquery = $this->get_refund_subquery( $query_args );
-		$from_clause    .= $refund_subquery['from_clause'];
-		if ( $refund_subquery['where_clause'] ) {
-			$where_filters[] = $refund_subquery['where_clause'];
-		}
-
-		$where_filters   = array_filter( $where_filters );
-		$where_subclause = implode( " $operator ", $where_filters );
-
-		// Append status filter after to avoid matching ANY on default statuses.
-		$order_status_filter = $this->get_status_subquery( $query_args, $operator );
-		if ( $order_status_filter ) {
-			if ( empty( $query_args['status_is'] ) && empty( $query_args['status_is_not'] ) ) {
-				$operator = 'AND';
-			}
-			$where_subclause = implode( " $operator ", array_filter( array( $where_subclause, $order_status_filter ) ) );
-		}
-
-		// To avoid requesting the subqueries twice, the result is applied to all queries passed to the method.
-		if ( $where_subclause ) {
-			$this->total_query->add_sql_clause( 'where', "AND ( $where_subclause )" );
-			$this->total_query->add_sql_clause( 'join', $from_clause );
-			$this->interval_query->add_sql_clause( 'where', "AND ( $where_subclause )" );
-			$this->interval_query->add_sql_clause( 'join', $from_clause );
-		}
-	}
-
-	/**
 	 * Returns the report data based on parameters supplied by the user.
 	 *
 	 * @param array $query_args  Query parameters.
@@ -274,24 +83,15 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			'page'              => 1,
 			'order'             => 'DESC',
 			'orderby'           => 'date',
+			'after'							=> date('Y-m-d H:i:s'),
 			'before'            => TimeInterval::default_before(),
-			'after'             => TimeInterval::default_after(),
 			'interval'          => 'week',
 			'fields'            => '*',
 			'segmentby'         => '',
-
-			'match'             => 'all',
-			'status_is'         => array(),
-			'status_is_not'     => array(),
 			'product_includes'  => array(),
 			'product_excludes'  => array(),
-			'coupon_includes'   => array(),
-			'coupon_excludes'   => array(),
-			'tax_rate_includes' => array(),
-			'tax_rate_excludes' => array(),
-			'customer_type'     => '',
-			'category_includes' => array(),
 		);
+
 		$query_args = wp_parse_args( $query_args, $defaults );
 		$this->normalize_timezones( $query_args, $defaults );
 
@@ -302,130 +102,53 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$cache_key = $this->get_cache_key( $query_args );
 		$data      = $this->get_cached_data( $cache_key );
 
-		if ( isset( $query_args['date_type'] ) ) {
-			$this->date_column_name = $query_args['date_type'];
-		}
+
 
 		if ( false === $data ) {
-			$this->initialize_queries();
+			$data            = new stdClass();
+			$data->totals    = static::$defaultModel;
+			$data->intervals = array();
 
-			$data = (object) array(
-				'totals'    => (object) array(),
-				'intervals' => (object) array(),
-				'total'     => 0,
-				'pages'     => 0,
-				'page_no'   => 0,
+			$subscriptions = wcs_get_orders_with_meta_query(
+				array(
+					'type'       => 'shop_subscription',
+					'meta_query' => array(
+						array(
+							'key'  => wcs_get_date_meta_key( 'next_payment' ),
+							'type' => 'EXISTS',
+						),
+						array(
+							'key'     => wcs_get_date_meta_key( 'next_payment' ),
+							'value'   => $query_args['before'],
+							'compare' => '>',
+							'type'    => 'DATETIME',
+						),
+						array(
+							'key'     => wcs_get_date_meta_key( 'next_payment' ),
+							'value'   => $query_args['after'],
+							'compare' => '<',
+							'type'    => 'DATETIME',
+						),
+					),
+				)
 			);
 
-			$selections = $this->selected_columns( $query_args );
-			$this->add_time_period_sql_params( $query_args, $table_name );
-			$this->add_intervals_sql_params( $query_args, $table_name );
-			$this->add_order_by_sql_params( $query_args );
-			$where_time  = $this->get_sql_clause( 'where_time' );
-			$params      = $this->get_limit_sql_params( $query_args );
-			$coupon_join = "LEFT JOIN (
-						SELECT
-							order_id,
-							SUM(discount_amount) AS discount_amount,
-							COUNT(DISTINCT coupon_id) AS coupons_count
-						FROM
-							{$wpdb->prefix}wc_order_coupon_lookup
-						GROUP BY
-							order_id
-						) order_coupon_lookup
-						ON order_coupon_lookup.order_id = {$wpdb->prefix}wc_order_stats.order_id";
+			foreach ( $subscriptions as $order ) {
+				$subscription = new WC_Subscription( $order );
 
-			// Additional filtering for Renewals report.
-			$this->renewals_stats_sql_filter( $query_args );
-			$this->total_query->add_sql_clause( 'select', $selections );
-			$this->total_query->add_sql_clause( 'left_join', $coupon_join );
-			$this->total_query->add_sql_clause( 'where_time', $where_time );
-			$totals = $wpdb->get_results(
-				$this->total_query->get_query_statement(),
-				ARRAY_A
-			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
-			if ( null === $totals ) {
-				return new \WP_Error( 'woocommerce_renewals_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
+				++$data->totals['renewal_count'];
+				$data->totals['revenue'] += $order->get_total();
+
+				$next_payment_date = DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $subscription->get_date( 'next_payment' ) );
+				$interval_key      = $next_payment_date->format( 'Y-m-d' );
+
+				if ( ! array_key_exists( $interval_key, $data->intervals ) ) {
+					$data->intervals[ $interval_key ] = static::$defaultModel;
+				}
+
+				++$data->intervals[ $interval_key ]['renewal_count'];
+				$data->intervals[ $interval_key ]['revenue'] += $order->get_total();
 			}
-
-			// phpcs:ignore Generic.Commenting.Todo.TaskFound
-			// @todo Remove these assignements when refactoring segmenter classes to use query objects.
-			$totals_query    = array(
-				'from_clause'       => $this->total_query->get_sql_clause( 'join' ),
-				'where_time_clause' => $where_time,
-				'where_clause'      => $this->total_query->get_sql_clause( 'where' ),
-			);
-			$intervals_query = array(
-				'select_clause'     => $this->get_sql_clause( 'select' ),
-				'from_clause'       => $this->interval_query->get_sql_clause( 'join' ),
-				'where_time_clause' => $where_time,
-				'where_clause'      => $this->interval_query->get_sql_clause( 'where' ),
-				'limit'             => $this->get_sql_clause( 'limit' ),
-			);
-
-			$unique_products            = $this->get_unique_product_count( $totals_query['from_clause'], $totals_query['where_time_clause'], $totals_query['where_clause'] );
-			$totals[0]['products']      = $unique_products;
-			$segmenter                  = new Segmenter( $query_args, $this->report_columns );
-			$unique_coupons             = $this->get_unique_coupon_count( $totals_query['from_clause'], $totals_query['where_time_clause'], $totals_query['where_clause'] );
-			$totals[0]['coupons_count'] = $unique_coupons;
-			$totals[0]['segments']      = $segmenter->get_totals_segments( $totals_query, $table_name );
-			$totals                     = (object) $this->cast_numbers( $totals[0] );
-
-			$this->interval_query->add_sql_clause( 'select', $this->get_sql_clause( 'select' ) . ' AS time_interval' );
-			$this->interval_query->add_sql_clause( 'left_join', $coupon_join );
-			$this->interval_query->add_sql_clause( 'where_time', $where_time );
-			$db_intervals = $wpdb->get_col(
-				$this->interval_query->get_query_statement()
-			); // phpcs:ignore cache ok, DB call ok, , unprepared SQL ok.
-
-			$db_interval_count       = count( $db_intervals );
-			$expected_interval_count = TimeInterval::intervals_between( $query_args['after'], $query_args['before'], $query_args['interval'] );
-			$total_pages             = (int) ceil( $expected_interval_count / $params['per_page'] );
-
-			if ( $query_args['page'] < 1 || $query_args['page'] > $total_pages ) {
-				return $data;
-			}
-
-			$this->update_intervals_sql_params( $query_args, $db_interval_count, $expected_interval_count, $table_name );
-			$this->interval_query->add_sql_clause( 'order_by', $this->get_sql_clause( 'order_by' ) );
-			$this->interval_query->add_sql_clause( 'limit', $this->get_sql_clause( 'limit' ) );
-			$this->interval_query->add_sql_clause( 'select', ", MAX({$table_name}.date_created) AS datetime_anchor" );
-			if ( '' !== $selections ) {
-				$this->interval_query->add_sql_clause( 'select', ', ' . $selections );
-			}
-			$intervals = $wpdb->get_results(
-				$this->interval_query->get_query_statement(),
-				ARRAY_A
-			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
-
-			if ( null === $intervals ) {
-				return new \WP_Error( 'woocommerce_renewals_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
-			}
-
-			if ( isset( $intervals[0] ) ) {
-				$unique_coupons                = $this->get_unique_coupon_count( $intervals_query['from_clause'], $intervals_query['where_time_clause'], $intervals_query['where_clause'], true );
-				$intervals[0]['coupons_count'] = $unique_coupons;
-			}
-
-			$data = (object) array(
-				'totals'    => $totals,
-				'intervals' => $intervals,
-				'total'     => $expected_interval_count,
-				'pages'     => $total_pages,
-				'page_no'   => (int) $query_args['page'],
-			);
-
-			if ( TimeInterval::intervals_missing( $expected_interval_count, $db_interval_count, $params['per_page'], $query_args['page'], $query_args['order'], $query_args['orderby'], count( $intervals ) ) ) {
-				$this->fill_in_missing_intervals( $db_intervals, $query_args['adj_after'], $query_args['adj_before'], $query_args['interval'], $data );
-				$this->sort_intervals( $data, $query_args['orderby'], $query_args['order'] );
-				$this->remove_extra_records( $data, $query_args['page'], $params['per_page'], $db_interval_count, $expected_interval_count, $query_args['orderby'], $query_args['order'] );
-			} else {
-				$this->update_interval_boundary_dates( $query_args['after'], $query_args['before'], $query_args['interval'], $data->intervals );
-			}
-			$segmenter->add_intervals_segments( $data, $intervals_query, $table_name );
-			$this->create_interval_subtotals( $data->intervals );
-
-			$this->set_cached_data( $cache_key, $data );
 		}
 
 		return $data;

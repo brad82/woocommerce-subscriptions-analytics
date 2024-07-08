@@ -20,6 +20,10 @@ const SUBSCRIPTION_REPORT_ADVANCED_FILTERS_FILTER =
  * @typedef {import('../../index.js').chart} chart
  */
 
+function before( months ) {
+	const now = new Date();
+	return new Date( now.setMonth( now.getMonth() + months ) ).toISOString();
+}
 /**
  * Subscription Report charts filter.
  *
@@ -162,6 +166,18 @@ if ( Object.keys( advancedFilters.filters ).length ) {
  * @param {Array.<filter>} filters Report filters.
  */
 export const filters = applyFilters( SUBSCRIPTION_REPORT_FILTERS_FILTER, [
+	{
+		label: __( 'Period', 'woocommerce-admin' ),
+		staticParams: [ 'chartType', 'paged', 'per_page' ],
+		param: 'before',
+		showFilters: () => filterValues.length > 0,
+		defaultValue: before( 3 ),
+		filters: [
+			{ label: 'Next 3 Months', value: before( 3 ) },
+			{ label: 'Next 6 Months', value: before( 6 ) },
+			{ label: 'Next 12 Months', value: before( 1 ) },
+		],
+	},
 	{
 		label: __( 'Show', 'woocommerce-admin' ),
 		staticParams: [ 'chartType', 'paged', 'per_page' ],

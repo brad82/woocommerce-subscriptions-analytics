@@ -25,6 +25,7 @@ export default class RenewalsReport extends Component {
 					report="renewals"
 					filters={ filters }
 					advancedFilters={ advancedFilters }
+					showDatePicker={ false }
 				/>
 				<ReportSummary
 					charts={ charts }

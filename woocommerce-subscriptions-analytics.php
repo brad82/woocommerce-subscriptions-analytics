@@ -109,6 +109,7 @@ if ( ! class_exists( 'Woocommerce_Subscriptions_Analytics' ) ) :
 				array(
 					'report-subscriptions-stats' => \SOS\Analytics\Admin\API\Reports\Subscriptions\Stats\DataStore::class,
 					'report-renewals-stats'      => \SOS\Analytics\Admin\API\Reports\Renewals\Stats\DataStore::class,
+					'report-subscriptions-stats-recurring-revenue'      => \SOS\Analytics\Admin\API\Reports\RecurringRevenue\Stats\DataStore::class,
 				)
 			);
 		}

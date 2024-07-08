@@ -150,21 +150,21 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 				'readonly'    => true,
 				'format'      => 'currency',
 			),
-			'total_customers'      => array(
+			'total_customers'              => array(
 				'title'       => __( 'Total Customers', 'sos-analytics' ),
 				'description' => __( 'Total customers.', 'sos-analytics' ),
 				'type'        => 'currency',
 				'context'     => array( 'view', 'edit' ),
 				'readonly'    => true,
 			),
-			'mrr'      => array(
+			'mrr'                          => array(
 				'title'       => __( 'MRR', 'sos-analytics' ),
 				'description' => __( 'Monthly recurring revenue.', 'sos-analytics' ),
 				'type'        => 'currency',
 				'context'     => array( 'view', 'edit' ),
 				'readonly'    => true,
 			),
-			'arr'      => array(
+			'arr'                          => array(
 				'title'       => __( 'ARR', 'sos-analytics' ),
 				'description' => __( 'Annual recurring revenue.', 'sos-analytics' ),
 				'type'        => 'currency',
