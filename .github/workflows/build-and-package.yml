@@ -74,7 +74,7 @@ jobs:
             - name: Package
               run: |
                   npm install
-                  npm plugin-zip
+                  npm run plugin-zip
 
             - name: Upload a Build Artifact
               uses: actions/upload-artifact@v4.3.4
