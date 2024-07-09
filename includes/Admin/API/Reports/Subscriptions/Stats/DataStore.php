@@ -57,6 +57,13 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		'total_customers'            => 'intval',
 		'products'                   => 'intval',
 		'segment_id'                 => 'intval',
+		'total_customers'            => 'intval',
+		'expired_trials'             => 'intval',
+		'new_trials'                 => 'intval',
+		'new_trials'                 => 'intval',
+		'cancellations'              => 'intval',
+		'on_hold'                    => 'intval',
+		'expired'                    => 'intval',
 	);
 
 	/**
@@ -74,6 +81,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		parent::__construct();
 	}
 
+	protected static function sql_count_status($table_name, $status, $as = null): string {
+		$as = is_null($as) ? $status : $as;
+		return "COALESCE( SUM( CASE WHEN {$table_name}.status='{$status}' THEN 1 ELSE 0 END ), 0 ) AS `{$as}`";
+	}
 	/**
 	 * Assign report columns once full table name has been assigned.
 	 */
@@ -90,14 +101,24 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			' ) as gross_sales';
 
 			$this->report_columns = array(
-				'expired_trials' => "SUM( CASE WHEN {$table_name}.status='trial-expired' THEN 1 ELSE 0 END ) as expired_trials",
-				'new_trials'     => "SUM( CASE WHEN {$table_name}.status='trial-started' THEN 1 ELSE 0 END ) as new_trials",
-				'revenue'        => '69.00 as revenue',
-				'refunds'        => "{$refunds} AS refunds",
-				'new_trials'     => "SUM( CASE WHEN {$table_name}.status='trial-started' THEN 1 ELSE 0 END ) as switches",
-				'cancellations'  => "SUM( CASE WHEN {$table_name}.status='cancelled' THEN 1 ELSE 0 END ) as cencellations",
-				'on_hold'        => "SUM( CASE WHEN {$table_name}.status='on-hold' THEN 1 ELSE 0 END ) as on_hold",
-				'expired'        => "SUM( CASE WHEN {$table_name}.status='expired' THEN 1 ELSE 0 END ) as expired",
+				'subscriptions_count' => "SUM( CASE WHEN {$table_name}.parent_id = 0 THEN 1 ELSE 0 END ) as subscriptions_count",
+				'num_items_sold'      => "SUM({$table_name}.num_items_sold) as num_items_sold",
+				'gross_sales'         => $gross_sales,
+				'total_sales'         => "SUM({$table_name}.total_sales) AS total_sales",
+				'coupons'             => 'COALESCE( SUM(discount_amount), 0 ) AS coupons', // SUM() all nulls gives null.
+				'coupons_count'       => 'COALESCE( coupons_count, 0 ) as coupons_count',
+				'refunds'             => "{$refunds} AS refunds",
+				'taxes'               => "SUM({$table_name}.tax_total) AS taxes",
+				'shipping'            => "SUM({$table_name}.shipping_total) AS shipping",
+				'net_revenue'         => "SUM({$table_name}.net_total) AS net_revenue",
+
+				'total_customers'     => "COUNT( DISTINCT( {$table_name}.customer_id ) ) as total_customers",
+				'expired_trials'      => static::sql_count_status($table_name, 'trial-expired', 'expired_trials'),
+				'new_trials'          => static::sql_count_status($table_name, 'trial-started', 'new_trials'),
+				'new_trials'          => static::sql_count_status($table_name, 'trial-started', 'switches'),
+				'cancellations'       => static::sql_count_status($table_name, 'cancelled', 'cancellations'),
+				'on_hold'             => static::sql_count_status($table_name, 'on-hold', 'on_hold'),
+				'expired'             => static::sql_count_status($table_name, 'expired', 'expired'),
 			);
 	}
 

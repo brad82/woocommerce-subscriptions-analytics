@@ -20,7 +20,8 @@ defined( 'ABSPATH' ) || exit;
 require_once plugin_dir_path( __FILE__ ) . '/vendor/autoload_packages.php';
 
 const PLUGIN_VERSION = '0.1.0';
-const PLUGIN_DIR = __FILE__;
+const PLUGIN_DIR = __DIR__;
+const PLUGIN_FILE = __FILE__;
 
 register_activation_hook( __FILE__, array( Lifecycle\ActivationHandler::class, 'on_activate' ) );
 

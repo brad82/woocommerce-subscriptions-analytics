@@ -48,8 +48,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @var array
 	 */
 	protected $column_types = array(
-		'arr' => 'floatval',
-		'mrr' => 'floatval',
+		'count_total_customers' => 'intval',
+		'calculated_arpu'       => 'floatval',
+		'calculated_mrr'        => 'floatval',
+		'calculated_mrr'        => 'floatval',
 	);
 
 	/**
@@ -57,13 +59,13 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 *
 	 * @var string
 	 */
-	protected $context = 'renewals_stats';
+	protected $context = 'recurring_revenue_stats';
 
 	/**
 	 * Dynamically sets the date column name based on configuration
 	 */
 	public function __construct() {
-		$this->date_column_name = get_option( 'woocommerce_date_type', 'period' );
+		$this->date_column_name = get_option( 'woocommerce_date_type', 'date' );
 		parent::__construct();
 	}
 
@@ -71,6 +73,12 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * Assign report columns once full table name has been assigned.
 	 */
 	protected function assign_report_columns() {
+		$this->report_columns = array(
+			'total_customers' => 'count_total_customers as total_customers',
+			'arpu'            => 'calculated_arpu as arpu',
+			'mrr'             => 'calculated_mrr as mmr',
+			'mrr'             => 'calculated_arr as amr',
+		);
 	}
 
 	/**

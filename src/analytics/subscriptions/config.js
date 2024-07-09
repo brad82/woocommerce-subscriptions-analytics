@@ -61,6 +61,25 @@ export const charts = applyFilters( SUBSCRIPTION_REPORT_CHARTS_FILTER, [
 		isReverseTrend: false,
 	},
 	{
+		key: 'coupons',
+		label: __( 'Coupons', 'woocommerce' ),
+		order: 'desc',
+		orderby: 'coupons',
+		type: 'currency',
+		isReverseTrend: false,
+	},
+	{
+		key: 'net_revenue',
+		label: __( 'Net sales', 'woocommerce' ),
+		orderby: 'net_revenue',
+		type: 'currency',
+		isReverseTrend: false,
+		labelTooltipText: __(
+			'Full refunds are not deducted from tax or net sales totals',
+			'woocommerce'
+		),
+	},
+	{
 		key: 'switches',
 		label: __( 'Switches', 'woocommerce-admin' ),
 		order: 'desc',

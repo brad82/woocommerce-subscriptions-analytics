@@ -4,6 +4,8 @@ namespace SOS\Analytics\Admin;
 
 use Automattic\WooCommerce\Admin\PageController;
 
+use const SOS\Analytics\PLUGIN_FILE;
+
 /**
  * SOS\Analytics Setup Class
  */
@@ -33,14 +35,15 @@ class Setup {
 		}
 
 		$script_path       = '/build/index.js';
-		$script_asset_path = dirname( MAIN_PLUGIN_FILE ) . '/build/index.asset.php';
+		$script_asset_path = dirname( PLUGIN_FILE ) . '/build/index.asset.php';
 		$script_asset      = file_exists( $script_asset_path )
 			? require $script_asset_path
 			: array(
 				'dependencies' => array(),
 				'version'      => filemtime( $script_path ),
 			);
-		$script_url        = plugins_url( $script_path, MAIN_PLUGIN_FILE );
+
+		$script_url = plugins_url( $script_path, PLUGIN_FILE );
 
 		wp_register_script(
 			'woocommerce-subscriptions-analytics',
@@ -52,9 +55,9 @@ class Setup {
 
 		wp_register_style(
 			'woocommerce-subscriptions-analytics',
-			plugins_url( '/build/index.css', MAIN_PLUGIN_FILE ),
+			plugins_url( '/build/index.css', PLUGIN_FILE ),
 			array(),
-			filemtime( dirname( MAIN_PLUGIN_FILE ) . '/build/index.css' )
+			filemtime( dirname( PLUGIN_FILE ) . '/build/index.css' )
 		);
 
 		wp_enqueue_script( 'woocommerce-subscriptions-analytics' );
