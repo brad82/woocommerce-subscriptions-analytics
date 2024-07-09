@@ -237,15 +237,7 @@ class SubscriptionReportTable extends Component {
 	}
 
 	getSummary( totals, totalResults = 0 ) {
-		const {
-			new_subscriptions,
-			new_trials,
-			gross_sales,
-			refunds,
-			switches,
-			expired,
-			resubscribes,
-		} = totals;
+		const { new_subscriptions, new_trials, gross_sales } = totals;
 
 		const {
 			formatAmount,
