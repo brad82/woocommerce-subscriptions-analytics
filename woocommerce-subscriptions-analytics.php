@@ -5,7 +5,7 @@
  * Version: 0.1.0
  * Author: Supreme Online Solutions
  * Author URI: https://supremeonline.solutions
- * Text Domain: woocommerce-subscriptions-analytics
+ * Text Domain: sos-analytics
  * Domain Path: /languages
  *
  * License: GNU General Public License v3.0
