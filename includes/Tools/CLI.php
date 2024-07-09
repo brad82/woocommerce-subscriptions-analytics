@@ -1,6 +1,6 @@
 <?php
 
-namespace SOS\Analytics;
+namespace SOS\Analytics\Tools;
 
 use DateInterval;
 use DateTimeImmutable;
@@ -19,12 +19,11 @@ class CLI {
 	 *
 	 * @return void
 	 **/
-	public static function register(): void {
+	public static function init(): void {
 		if ( ! class_exists( '\WP_CLI' ) ) {
 			return;
 		}
 
-		// phpcs:ignore
 		\WP_CLI::add_command( 'sub-stats', self::class );
 	}
 

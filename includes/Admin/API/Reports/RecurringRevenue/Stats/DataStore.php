@@ -184,7 +184,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$data->segments = $segments;
 		$data->totals   = self::calculate_totals( $data->totals );
 
-		$rollup['date'] = date( 'Y-m-d' );
+		$rollup['date']       = date( 'Y-m-d' );
 		$rollup['updated_at'] = date( 'Y-m-d H:i:s' );
 
 		$rollup['count_active']          = count( $subscriptions );

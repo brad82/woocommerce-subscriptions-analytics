@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Plugin Name: Woocommerce Subscriptions Analytics
  * Description: Adds extended analytics to WooCommerce for Subscriptions
@@ -14,30 +13,30 @@
  *
  * @package extension
  */
+namespace SOS\Analytics;
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! defined( 'MAIN_PLUGIN_FILE' ) ) {
-	define( 'MAIN_PLUGIN_FILE', __FILE__ );
-}
-
 require_once plugin_dir_path( __FILE__ ) . '/vendor/autoload_packages.php';
 
-register_activation_hook( __FILE__, array( SOS\Analytics\Lifecycle\ActivationHandler::class, 'on_activate' ) );
+const PLUGIN_VERSION = '0.1.0';
+const PLUGIN_DIR = __FILE__;
+
+register_activation_hook( __FILE__, array( Lifecycle\ActivationHandler::class, 'on_activate' ) );
 
 /**
  * Initialize the plugin.
  *
  * @since 0.1.0
  */
-function woocommerce_subscriptions_analytics_init() {
-	load_plugin_textdomain( 'woocommerce_subscriptions_analytics', false, plugin_basename( __DIR__ ) . '/languages' );
+function sos_analytics_init() {
+	load_plugin_textdomain( 'sos-analytics', false, plugin_basename( __DIR__ ) . '/languages' );
 
 	if ( ! class_exists( 'WooCommerce' ) ) {
 		return;
 	}
 
-	SOS\Analytics\Bootstrap::instance();
+	Bootstrap::instance();
 }
 
-add_action( 'plugins_loaded', 'woocommerce_subscriptions_analytics_init', 10 );
+add_action( 'plugins_loaded', __NAMESPACE__ . '\\sos_analytics_init', 10 );

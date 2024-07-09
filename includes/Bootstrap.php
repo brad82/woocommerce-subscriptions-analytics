@@ -2,51 +2,29 @@
 
 namespace SOS\Analytics;
 
-class Bootstrap {
+class Bootstrap extends Abstracts\AbstractSingleton {
 
 	/**
 	 * Plugin Version
 	 *
 	 * @var string Semver
 	 */
-	public string $version = '0.1.0';
-	/**
-	 * This class instance.
-	 *
-	 * @var \woocommerce_subscriptions_analytics single instance of this class.
-	 */
-	private static $instance;
+	public string $version = PLUGIN_VERSION;
 
 	/**
-	 * Constructor.
+	 * Main plugin entrypoint.
 	 */
 	public function __construct() {
 		if ( is_admin() ) {
-			new Setup();
+			new Admin\Setup();
 		}
 
-		CLI::register();
-
+		Tools\CLI::init();
 		Admin\Schedulers\SubscriptionsScheduler::init();
 
 		add_filter( 'woocommerce_admin_rest_controllers', array( $this, 'register_rest_controllers' ) );
 		add_filter( 'woocommerce_data_stores', array( $this, 'add_data_stores' ) );
 	}
-
-	/**
-	 * Cloning is forbidden.
-	 */
-	public function __clone() {
-		wc_doing_it_wrong( __FUNCTION__, __( 'Cloning is forbidden.', 'sos-analytics' ), $this->version );
-	}
-
-	/**
-	 * Unserializing instances of this class is forbidden.
-	 */
-	public function __wakeup() {
-		wc_doing_it_wrong( __FUNCTION__, __( 'Unserializing instances of this class is forbidden.', 'sos-analytics' ), $this->version );
-	}
-
 
 	/**
 	 * Register Rest Routes
@@ -75,26 +53,10 @@ class Bootstrap {
 		return array_merge(
 			$data_stores,
 			array(
-				'report-subscriptions-stats' =>	Admin\API\Reports\Subscriptions\Stats\DataStore::class,
-				'report-renewals-stats'      =>	Admin\API\Reports\Renewals\Stats\DataStore::class,
+				'report-subscriptions-stats' => Admin\API\Reports\Subscriptions\Stats\DataStore::class,
+				'report-renewals-stats'      => Admin\API\Reports\Renewals\Stats\DataStore::class,
 				'report-subscriptions-stats-recurring-revenue' => Admin\API\Reports\RecurringRevenue\Stats\DataStore::class,
 			)
 		);
-	}
-
-	/**
-	 * Gets the main instance.
-	 *
-	 * Ensures only one instance can be loaded.
-	 *
-	 * @return \Woocommerce_Subscriptions_Analytics
-	 */
-	public static function instance() {
-
-		if ( null === self::$instance ) {
-			self::$instance = new self();
-		}
-
-		return self::$instance;
 	}
 }
