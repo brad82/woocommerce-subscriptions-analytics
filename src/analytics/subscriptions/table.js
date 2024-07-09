@@ -75,15 +75,8 @@ class SubscriptionReportTable extends Component {
 				isNumeric: true,
 			},
 			{
-				label: __( 'Expired Trials', 'sos-analytics' ),
-				key: 'expired_trials',
-				required: false,
-				isSortable: true,
-				isNumeric: true,
-			},
-			{
-				label: __( 'Revenue', 'sos-analytics' ),
-				key: 'revenue',
+				label: __( 'Gross Sales', 'sos-analytics' ),
+				key: 'gross_sales',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
@@ -96,8 +89,44 @@ class SubscriptionReportTable extends Component {
 				isNumeric: true,
 			},
 			{
+				label: __( 'Coupons', 'sos-analytics' ),
+				key: 'coupons',
+				required: false,
+				isSortable: true,
+				isNumeric: true,
+			},
+			{
+				label: __( 'Net Revenue', 'sos-analytics' ),
+				key: 'net_revenue',
+				required: false,
+				isSortable: true,
+				isNumeric: true,
+			},
+			{
+				label: __( 'Taxes', 'sos-analytics' ),
+				key: 'taxes',
+				required: false,
+				isSortable: true,
+				isNumeric: true,
+			},
+
+			{
 				label: __( 'Switches', 'sos-analytics' ),
 				key: 'switches',
+				required: false,
+				isSortable: true,
+				isNumeric: true,
+			},
+			{
+				label: __( 'Cancellations', 'sos-analytics' ),
+				key: 'cancellations',
+				required: false,
+				isSortable: true,
+				isNumeric: true,
+			},
+			{
+				label: __( 'On Hold', 'sos-analytics' ),
+				key: 'on_hold',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
@@ -112,13 +141,6 @@ class SubscriptionReportTable extends Component {
 			{
 				label: __( 'Resubscribes', 'sos-analytics' ),
 				key: 'resubscribes',
-				required: false,
-				isSortable: true,
-				isNumeric: true,
-			},
-			{
-				label: __( 'Total sales', 'sos-analytics' ),
-				key: 'total_sales',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
@@ -140,10 +162,14 @@ class SubscriptionReportTable extends Component {
 				date,
 				new_subscriptions,
 				new_trials,
-				expired_trials,
-				revenue,
+				gross_sales,
+				coupons,
+				net_revenue,
+				taxes,
 				refunds,
 				switches,
+				cancellations,
+				on_hold,
 				expired,
 				resubscribes,
 			} = row.subtotals;
@@ -167,27 +193,43 @@ class SubscriptionReportTable extends Component {
 					value: Number( new_trials ),
 				},
 				{
-					display: expired_trials,
-					value: Number( expired_trials ),
-				},
-				{
-					display: formatAmount( revenue ),
-					value: getCurrencyFormatDecimal( revenue ),
+					display: formatAmount( gross_sales ),
+					value: getCurrencyFormatDecimal( gross_sales ),
 				},
 				{
 					display: formatAmount( refunds ),
 					value: getCurrencyFormatDecimal( refunds ),
 				},
 				{
-					display: switches,
+					display: formatAmount( coupons ),
+					value: getCurrencyFormatDecimal( coupons ),
+				},
+				{
+					display: formatAmount( net_revenue ),
+					value: getCurrencyFormatDecimal( net_revenue ),
+				},
+				{
+					display: formatAmount( taxes ),
+					value: getCurrencyFormatDecimal( taxes ),
+				},
+				{
+					display: switches ?? 0,
 					value: Number( switches ),
 				},
 				{
-					display: expired,
+					display: cancellations ?? 0,
+					value: Number( cancellations ),
+				},
+				{
+					display: on_hold ?? 0,
+					value: Number( on_hold ),
+				},
+				{
+					display: expired ?? 0,
 					value: Number( expired ),
 				},
 				{
-					display: resubscribes,
+					display: resubscribes ?? 0,
 					value: Number( resubscribes ),
 				},
 			];
@@ -198,14 +240,19 @@ class SubscriptionReportTable extends Component {
 		const {
 			new_subscriptions,
 			new_trials,
-			expired_trials,
-			revenue,
+			gross_sales,
 			refunds,
 			switches,
 			expired,
 			resubscribes,
 		} = totals;
-		const { formatAmount, getCurrencyConfig } = this.context;
+
+		const {
+			formatAmount,
+			getCurrencyConfig,
+			formatDecimal: getCurrencyFormatDecimal,
+		} = this.context;
+
 		const currency = getCurrencyConfig();
 		return [
 			{
@@ -214,15 +261,15 @@ class SubscriptionReportTable extends Component {
 			},
 			{
 				label: __( 'New Subscriptions', 'sos-analytics' ),
-				value: formatValue( currency, 'number', new_subscriptions ),
+				value: new_subscriptions ?? 0,
 			},
 			{
 				label: __( 'New Trials', 'sos-analytics' ),
-				value: formatValue( currency, 'number', new_trials ),
+				value: new_trials ?? 0,
 			},
 			{
-				label: __( 'Expired Trials', 'sos-analytics' ),
-				value: formatValue( currency, 'number', expired_trials ),
+				label: __( 'Gross Sales', 'sos-analytics' ),
+				value: getCurrencyFormatDecimal( gross_sales ),
 			},
 		];
 	}

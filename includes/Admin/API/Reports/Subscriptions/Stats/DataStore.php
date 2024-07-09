@@ -4,6 +4,8 @@ namespace SOS\Analytics\Admin\API\Reports\Subscriptions\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
+use WC_Order;
+
 use Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
 use Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
@@ -533,6 +535,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		 *
 		 * @since 4.0.0
 		 */
+		$_order = new WC_Order($subscription);
 		$data = apply_filters(
 			'sos_analytics_update_subscription_stats_data',
 			array(
@@ -543,12 +546,12 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'date_paid'          => $subscription->get_date_paid() ? $subscription->get_date_paid()->date( 'Y-m-d H:i:s' ) : null,
 				'date_completed'     => $subscription->get_date_completed() ? $subscription->get_date_completed()->date( 'Y-m-d H:i:s' ) : null,
 				'date_created_gmt'   => gmdate( 'Y-m-d H:i:s', $subscription->get_date_created()->getTimestamp() ),
-				'num_items_sold'     => self::get_num_items_sold( $subscription ),
+				'num_items_sold'     => $record_revenue ? self::get_num_items_sold( $subscription ) : 0,
 				'total_sales'        => $record_revenue ? $subscription->get_total() : 0,
 				'tax_total'          => $record_revenue ? $subscription->get_total_tax() : 0,
 				'shipping_total'     => $record_revenue ? $subscription->get_shipping_total() : 0,
 				'net_total'          => $record_revenue ? self::get_net_total( $subscription ) : 0,
-				'status'             => $record_revenue ? $subscription->get_status() : 0,
+				'status'             => $subscription->get_status(),
 				'customer_id'        => -1,
 				'returning_customer' => false,
 			),

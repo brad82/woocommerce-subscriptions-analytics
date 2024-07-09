@@ -39,26 +39,20 @@ export const charts = applyFilters( SUBSCRIPTION_REPORT_CHARTS_FILTER, [
 		isReverseTrend: false,
 	},
 	{
-		key: 'expired_trials',
-		label: __( 'Expired Trials', 'woocommerce-admin' ),
+		key: 'gross_sales',
+		label: __( 'Gross sales', 'woocommerce' ),
 		order: 'desc',
-		orderby: 'expired_trials',
-		type: 'number',
-		isReverseTrend: false,
-	},
-	{
-		key: 'revenue',
-		label: __( 'Revenue', 'woocommerce-admin' ),
-		orderby: 'revenue',
+		orderby: 'gross_sales',
 		type: 'currency',
 		isReverseTrend: false,
 	},
 	{
 		key: 'refunds',
-		label: __( 'Refunds', 'woocommerce-admin' ),
+		label: __( 'Returns', 'woocommerce' ),
+		order: 'desc',
 		orderby: 'refunds',
 		type: 'currency',
-		isReverseTrend: false,
+		isReverseTrend: true,
 	},
 	{
 		key: 'coupons',
@@ -72,6 +66,18 @@ export const charts = applyFilters( SUBSCRIPTION_REPORT_CHARTS_FILTER, [
 		key: 'net_revenue',
 		label: __( 'Net sales', 'woocommerce' ),
 		orderby: 'net_revenue',
+		type: 'currency',
+		isReverseTrend: false,
+		labelTooltipText: __(
+			'Full refunds are not deducted from tax or net sales totals',
+			'woocommerce'
+		),
+	},
+	{
+		key: 'taxes',
+		label: __( 'Taxes', 'woocommerce' ),
+		order: 'desc',
+		orderby: 'taxes',
 		type: 'currency',
 		isReverseTrend: false,
 		labelTooltipText: __(

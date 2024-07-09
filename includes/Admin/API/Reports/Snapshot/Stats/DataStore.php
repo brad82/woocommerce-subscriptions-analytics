@@ -1,6 +1,6 @@
 <?php
 
-namespace SOS\Analytics\Admin\API\Reports\Renewals\Stats;
+namespace SOS\Analytics\Admin\API\Reports\Snapshot\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -13,7 +13,7 @@ use Automattic\WooCommerce\Admin\API\Reports\Customers\DataStore as CustomersDat
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
 /**
- * API\Reports\Renewals\Stats\DataStore.
+ * API\Reports\Snapshot\Stats\DataStore.
  */
 class DataStore extends ReportsDataStore implements DataStoreInterface {
 
@@ -42,7 +42,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @var array
 	 */
 	protected $column_types = array(
-		'renewals_count'      => 'intval',
+		'snapshot_count'      => 'intval',
 		'num_items_sold'      => 'intval',
 		'gross_sales'         => 'floatval',
 		'total_sales'         => 'floatval',
@@ -97,11 +97,11 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	}
 
 	/**
-	 * Updates the totals and intervals database queries with parameters used for Renewals report: categories, coupons and order status.
+	 * Updates the totals and intervals database queries with parameters used for Snapshot report: categories, coupons and order status.
 	 *
 	 * @param array $query_args      Query arguments supplied by the user.
 	 */
-	protected function renewals_stats_sql_filter( $query_args ) {
+	protected function snapshot_stats_sql_filter( $query_args ) {
 		// phpcs:ignore Generic.Commenting.Todo.TaskFound
 		// @todo Performance of all of this?
 		global $wpdb;
@@ -175,8 +175,8 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 						) order_coupon_lookup
 						ON order_coupon_lookup.order_id = {$wpdb->prefix}wc_order_stats.order_id";
 
-			// Additional filtering for Renewals report.
-			$this->renewals_stats_sql_filter( $query_args );
+			// Additional filtering for Snapshot report.
+			$this->snapshot_stats_sql_filter( $query_args );
 			$this->total_query->add_sql_clause( 'select', $selections );
 			$this->total_query->add_sql_clause( 'left_join', $coupon_join );
 			$this->total_query->add_sql_clause( 'where_time', $where_time );
@@ -185,7 +185,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				ARRAY_A
 			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
 			if ( null === $totals ) {
-				return new \WP_Error( 'woocommerce_renewals_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
+				return new \WP_Error( 'woocommerce_snapshot_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
 			}
 
 			// phpcs:ignore Generic.Commenting.Todo.TaskFound
@@ -239,7 +239,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
 
 			if ( null === $intervals ) {
-				return new \WP_Error( 'woocommerce_renewals_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
+				return new \WP_Error( 'woocommerce_snapshot_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
 			}
 
 			if ( isset( $intervals[0] ) ) {
@@ -276,7 +276,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 
 	/**
-	 * Get number of items sold among all renewals.
+	 * Get number of items sold among all snapshot.
 	 *
 	 * @param array $order WC_Order object.
 	 * @return int
@@ -304,7 +304,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	}
 
 	/**
-	 * Check to see if an order's customer has made previous renewals or not
+	 * Check to see if an order's customer has made previous snapshot or not
 	 *
 	 * @param array     $order WC_Order object.
 	 * @param int|false $customer_id Customer ID. Optional.
@@ -319,14 +319,14 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			return false;
 		}
 
-		$oldest_renewals = \Automattic\WooCommerce\Admin\API\Reports\Customers\DataStore::get_oldest_renewals( $customer_id );
+		$oldest_snapshot = \Automattic\WooCommerce\Admin\API\Reports\Customers\DataStore::get_oldest_snapshot( $customer_id );
 
-		if ( empty( $oldest_renewals ) ) {
+		if ( empty( $oldest_snapshot ) ) {
 			return false;
 		}
 
-		$first_order       = $oldest_renewals[0];
-		$second_order      = isset( $oldest_renewals[1] ) ? $oldest_renewals[1] : false;
+		$first_order       = $oldest_snapshot[0];
+		$second_order      = isset( $oldest_snapshot[1] ) ? $oldest_snapshot[1] : false;
 		$excluded_statuses = self::get_excluded_report_order_statuses();
 
 		// Order is older than previous first order.
@@ -362,14 +362,14 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	protected static function set_customer_first_order( $customer_id, $order_id ) {
 		global $wpdb;
-		$renewals_stats_table = self::get_db_table_name();
+		$snapshot_stats_table = self::get_db_table_name();
 
 		$wpdb->query(
 			$wpdb->prepare(
 				// phpcs:ignore Generic.Commenting.Todo.TaskFound
 				// TODO: use the %i placeholder to prepare the table name when available in the minimum required WordPress version.
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"UPDATE {$renewals_stats_table} SET returning_customer = CASE WHEN order_id = %d THEN false ELSE true END WHERE customer_id = %d",
+				"UPDATE {$snapshot_stats_table} SET returning_customer = CASE WHEN order_id = %d THEN false ELSE true END WHERE customer_id = %d",
 				$order_id,
 				$customer_id
 			)

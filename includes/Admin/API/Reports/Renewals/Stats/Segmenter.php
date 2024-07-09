@@ -4,7 +4,7 @@
  * Class for adding segmenting support without cluttering the data stores.
  */
 
-namespace SOS\Analytics\Admin\API\Reports\Subscriptions\Stats;
+namespace SOS\Analytics\Admin\API\Reports\Renewals\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -15,7 +15,6 @@ use Automattic\WooCommerce\Admin\API\Reports\ParameterException;
  * Date & time interval and numeric range handling class for Reporting API.
  */
 class Segmenter extends ReportsSegmenter {
-
 
 	/**
 	 * Returns column => query mapping to be used for product-related product-level segmenting query
