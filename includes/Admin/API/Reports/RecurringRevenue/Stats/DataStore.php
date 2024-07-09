@@ -110,59 +110,6 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$data      = $this->get_cached_data( $cache_key );
 
 		if ( false === $data ) {
-
-			$data           = new stdClass();
-			$data->totals   = static::$defaultModel;
-			$data->segments = array();
-
-			$subscriptions = wcs_get_subscriptions(
-				array(
-					'posts_per_page' => -1,
-				)
-			);
-
-			$segments = array();
-
-			/**
-			 * This would be much more efficient as an aggregated SQL query, but the HPOS
-			 * scheme doesn't have easy access to these sorts of values for historic orders
-			 *
-			 * Maybe switch to the subscriptions_history table once thats hydrated with a
-			 * good sample size
-			 */
-			foreach ( $subscriptions as $order ) {
-				foreach ( $order->get_items() as $item ) {
-					$product    = $item->get_product();
-					$product_id = $product->get_id();
-
-					if ( ! array_key_exists( $product_id, $segments ) ) {
-						$segments[ $product_id ] = array(
-							'customers' => array(),
-							'revenue'   => 0.0,
-							'tax'       => 0.0,
-						);
-					}
-
-					if ( ! in_array( $order->get_customer_id(), $segments[ $product_id ]['customers'] ) ) {
-						$segments[ $product_id ]['customers'][] = $order->get_customer_id();
-					}
-
-					$segments[ $product_id ]['revenue'] += $item->get_total();
-					$segments[ $product_id ]['tax']     += $item->get_total_tax();
-				}
-
-				if ( ! in_array( $order->get_customer_id(), $data->totals['customers'] ) ) {
-					$data->totals['customers'][] = $order->get_customer_id();
-				}
-
-				$data->totals['revenue'] += $item->get_total();
-				$data->totals['tax']     += $item->get_total_tax();
-			}
-
-			$data->segments = $segments;
-
-			$data->totals = $this->calculate_totals( $data->totals );
-
 			$this->set_cached_data( $cache_key, $data );
 		}
 
@@ -172,14 +119,92 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	/**
 	 * Calculation methods.
 	 */
+	public static function calculate_current_data() {
+		global $wpdb;
 
+		$data           = new stdClass();
+		$data->totals   = static::$defaultModel;
+		$data->segments = array();
+
+		$rollup = array(
+			'count_active'          => 0,
+			'count_total_customers' => 0,
+			'calculated_arpu'       => 0.0,
+			'calculated_mrr'        => 0.0,
+			'calculated_arr'        => 0.0,
+		);
+
+		$segments = array();
+
+		$subscriptions = wcs_get_subscriptions(
+			array(
+				'subscription_status' => array( 'wc-active' ),
+				'posts_per_page'      => -1,
+			)
+		);
+
+		/**
+		 * This would be much more efficient as an aggregated SQL query, but the HPOS
+		 * scheme doesn't have easy access to these sorts of values for historic orders
+		 *
+		 * Maybe switch to the subscriptions_history table once thats hydrated with a
+		 * good sample size
+		 */
+		foreach ( $subscriptions as $order ) {
+			++$rollup['count_active'];
+
+			foreach ( $order->get_items() as $item ) {
+				$product    = $item->get_product();
+				$product_id = $product->get_id();
+
+				if ( ! array_key_exists( $product_id, $segments ) ) {
+					$segments[ $product_id ] = array(
+						'customers' => array(),
+						'revenue'   => 0.0,
+						'tax'       => 0.0,
+					);
+				}
+
+				if ( ! in_array( $order->get_customer_id(), $segments[ $product_id ]['customers'] ) ) {
+					$segments[ $product_id ]['customers'][] = $order->get_customer_id();
+				}
+
+				$segments[ $product_id ]['revenue'] += $item->get_total();
+				$segments[ $product_id ]['tax']     += $item->get_total_tax();
+			}
+
+			if ( ! in_array( $order->get_customer_id(), $data->totals['customers'] ) ) {
+				$data->totals['customers'][] = $order->get_customer_id();
+			}
+
+			$data->totals['revenue'] += $item->get_total();
+			$data->totals['tax']     += $item->get_total_tax();
+		}
+
+		$data->segments = $segments;
+		$data->totals   = self::calculate_totals( $data->totals );
+
+		$rollup['date'] = date( 'Y-m-d' );
+		$rollup['updated_at'] = date( 'Y-m-d H:i:s' );
+
+		$rollup['count_active']          = count( $subscriptions );
+		$rollup['count_total_customers'] = $data->totals['total_customers'];
+		$rollup['calculated_arpu']       = $data->totals['average_revenue_per_customer'];
+		$rollup['calculated_mrr']        = $data->totals['mrr'];
+		$rollup['calculated_arr']        = $data->totals['arr'];
+
+		$wpdb->replace(
+			self::get_db_table_name(),
+			$rollup
+		);
+	}
 	/**
 	 * Item Reducer
 	 *
 	 * @param array $totals
 	 * @return array
 	 */
-	private function calculate_totals( array $totals ) {
+	private static function calculate_totals( array $totals ) {
 		$totals['total_customers'] = count( $totals['customers'] );
 
 		unset( $totals['customers'] );

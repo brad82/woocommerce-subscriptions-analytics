@@ -78,18 +78,18 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$table_name = self::get_db_table_name();
 
 		// These defaults are only applied when not using REST API, as the API has its own defaults that overwrite these for most values (except before, after, etc).
-		$defaults   = array(
-			'per_page'          => get_option( 'posts_per_page' ),
-			'page'              => 1,
-			'order'             => 'DESC',
-			'orderby'           => 'date',
-			'after'							=> date('Y-m-d H:i:s'),
-			'before'            => TimeInterval::default_before(),
-			'interval'          => 'week',
-			'fields'            => '*',
-			'segmentby'         => '',
-			'product_includes'  => array(),
-			'product_excludes'  => array(),
+		$defaults = array(
+			'per_page'         => get_option( 'posts_per_page' ),
+			'page'             => 1,
+			'order'            => 'DESC',
+			'orderby'          => 'date',
+			'after'            => date( 'Y-m-d H:i:s' ),
+			'before'           => TimeInterval::default_before(),
+			'interval'         => 'week',
+			'fields'           => '*',
+			'segmentby'        => '',
+			'product_includes' => array(),
+			'product_excludes' => array(),
 		);
 
 		$query_args = wp_parse_args( $query_args, $defaults );
@@ -101,8 +101,6 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		 */
 		$cache_key = $this->get_cache_key( $query_args );
 		$data      = $this->get_cached_data( $cache_key );
-
-
 
 		if ( false === $data ) {
 			$data            = new stdClass();

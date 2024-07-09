@@ -5,8 +5,10 @@ namespace SOS\Analytics;
 use DateInterval;
 use DateTimeImmutable;
 
+use SOS\Analytics\Admin\API\Reports\RecurringRevenue\Stats\DataStore as RecurringRevenueDataStore;
+
 /**
- * Cli
+ * WooCommerce Subscription Analytics Utilities
  *
  * @package SOS\Analytics
  */
@@ -23,7 +25,7 @@ class CLI {
 		}
 
 		// phpcs:ignore
-		\WP_CLI::add_command( 'wc_stats', self::class );
+		\WP_CLI::add_command( 'sub-stats', self::class );
 	}
 
 	/**
@@ -84,5 +86,10 @@ class CLI {
 		}
 
 		echo "Seed $table complete";
+	}
+
+	public function calculate(): void {
+		RecurringRevenueDataStore::init();
+		RecurringRevenueDataStore::calculate_current_data();
 	}
 }
