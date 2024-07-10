@@ -74,7 +74,7 @@ class Query extends ReportsQuery {
 					),
 					array(
 						'key'     => wcs_get_date_meta_key( 'next_payment' ),
-						'value'   => '2024-02-01 00:00:00',
+						'value'   => gmdate('Y-m-d H:i:s'),
 						'compare' => '>',
 						'type'    => 'DATETIME',
 					),
