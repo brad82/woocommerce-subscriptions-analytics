@@ -71,35 +71,20 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 	 * @return array|WP_Error
 	 */
 	public function get_items( $request ) {
-		$query_args     = $this->prepare_reports_query( $request );
-		$renewals_query = new Query( $query_args );
-		try {
-			$report_data = $renewals_query->get_data();
-		} catch ( ParameterException $e ) {
-			return new \WP_Error( $e->getErrorCode(), $e->getMessage(), array( 'status' => $e->getCode() ) );
-		}
+		$query_args  = $this->prepare_reports_query( $request );
+		$query = new Query( $query_args );
+		$report_data = $query->get_data();
 
-		$out_data = array(
-			'totals'    => $report_data->totals,
-			'intervals' => array(),
-		);
-
-		foreach ( $report_data->intervals as $interval => $subtotals ) {
-			$item = array(
-				'date_end'       => $interval . ' 23:59:59',
-				'date_end_gmt'   => $interval . ' 23:59:59',
-				'date_start'     => $interval . ' 00:00:00',
-				'date_start_gmt' => $interval . ' 00:00:00',
-				'subtotals'      => $subtotals,
-			);
-
-			$item                    = $this->prepare_item_for_response( $item, $request );
-			$out_data['intervals'][] = $this->prepare_response_for_collection( $item );
+		if ( is_wp_error( $report_data ) ) {
+			return $report_data;
 		}
 
 		return $this->add_pagination_headers(
 			$request,
-			$out_data,
+			[
+				'totals' => $report_data->totals,
+				'intervals' => $report_data->intervals,
+			],
 			(int) $report_data->total,
 			(int) $report_data->page_no,
 			(int) $report_data->pages
@@ -311,8 +296,9 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 			'default'           => 'date',
 			'enum'              => array(
 				'date',
-				'revenue',
+				'net_revenue',
 				'renewal_count',
+				'renewal_items',
 			),
 			'validate_callback' => 'rest_validate_request_arg',
 		);

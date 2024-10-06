@@ -15,7 +15,8 @@
 	},
 	"dependencies": {
 		"@wordpress/hooks": "^4.1.0",
-		"@wordpress/i18n": "^5.1.0"
+		"@wordpress/i18n": "^5.1.0",
+		"dayjs": "^1.11.13"
 	},
 	"devDependencies": {
 		"@woocommerce/dependency-extraction-webpack-plugin": "^3.0.1",

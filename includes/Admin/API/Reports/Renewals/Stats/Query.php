@@ -19,21 +19,13 @@ namespace SOS\Analytics\Admin\API\Reports\Renewals\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
-use DateTimeImmutable;
 use stdClass;
-use WC_Subscription;
-use function wcs_get_subscriptions;
 use Automattic\WooCommerce\Admin\API\Reports\Query as ReportsQuery;
 
 /**
  * API\Reports\Renewals\Stats\Query
  */
 class Query extends ReportsQuery {
-
-	private static $defaultModel = array(
-		'revenue'       => 0,
-		'renewal_count' => 0.0,
-	);
 
 	/**
 	 * Valid fields for Renewals report.
@@ -43,11 +35,10 @@ class Query extends ReportsQuery {
 	protected function get_default_query_vars() {
 		return array(
 			'fields' => array(
-				'date',
-				'revenue',
 				'renewal_count',
-				'product_name',
-				'product_id',
+				'net_revenue',
+				'total_customers',
+				'renewal_items',
 			),
 		);
 	}
@@ -58,47 +49,19 @@ class Query extends ReportsQuery {
 	 * @return stdClass
 	 */
 	public function get_data() {
-		$args = apply_filters( 'woocommerce_analytics_renewals_stats_query_args', $this->get_query_vars() );
+		$args = $this->get_query_vars();
 
-		$report_data            = new StdClass();
-		$report_data->totals    = static::$defaultModel;
-		$report_data->intervals = array();
+		$args['after'] = gmdate('c', time());
+		$args['before'] = gmdate('c', strtotime("+3 months", time()));
 
-		$subscriptions = wcs_get_orders_with_meta_query(
-			array(
-				'type'       => 'shop_subscription',
-				'meta_query' => array(
-					array(
-						'key'  => wcs_get_date_meta_key( 'next_payment' ),
-						'type' => 'EXISTS',
-					),
-					array(
-						'key'     => wcs_get_date_meta_key( 'next_payment' ),
-						'value'   => gmdate('Y-m-d H:i:s'),
-						'compare' => '>',
-						'type'    => 'DATETIME',
-					),
-				),
-			)
-		);
-
-		foreach ( $subscriptions as $order ) {
-			$subscription = new WC_Subscription( $order );
-
-			++$report_data->totals['renewal_count'];
-			$report_data->totals['revenue'] += $order->get_total();
-
-			$next_payment_date = DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $subscription->get_date( 'next_payment' ) );
-			$interval_key      = $next_payment_date->format( 'Y-m-d' );
-
-			if ( ! array_key_exists( $interval_key, $report_data->intervals ) ) {
-				$report_data->intervals[ $interval_key ] = static::$defaultModel;
-			}
-
-			++$report_data->intervals[ $interval_key ]['renewal_count'];
-			$report_data->intervals[ $interval_key ]['revenue'] += $order->get_total();
+		if ( isset ( $args['until'] ) ) {
+			$args['before'] = $args['until'];
 		}
 
-		return apply_filters( 'woocommerce_analytics_renewals_stats_select_query', $report_data, $args );
+		// $args = apply_filters( 'sos_analytics_stats_renewals_query_args', $this->get_query_vars() );
+
+		$data_store = \WC_Data_Store::load( 'report-renewals-stats' );
+		$results    = $data_store->get_data( $args );
+		return apply_filters( 'sos_analytics_stats_renewals_select_query', $results, $args );
 	}
 }

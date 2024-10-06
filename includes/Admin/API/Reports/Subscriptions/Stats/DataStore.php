@@ -13,6 +13,7 @@ use Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
 use Automattic\WooCommerce\Admin\API\Reports\Cache as ReportsCache;
 use Automattic\WooCommerce\Admin\API\Reports\Customers\DataStore as CustomersDataStore;
 use Automattic\WooCommerce\Utilities\OrderUtil;
+use DateTime;
 
 /**
  * API\Reports\Subscriptions\Stats\DataStore.
@@ -535,13 +536,14 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		 *
 		 * @since 4.0.0
 		 */
-		$_order = new WC_Order($subscription);
 		$data = apply_filters(
 			'sos_analytics_update_subscription_stats_data',
 			array(
 				'order_id'           => $subscription->get_id(),
 				'parent_id'          => $subscription->get_parent_id(),
 				'subscription_id'    => -1,
+				'log_date'					 => date('Y-m-d H:i:s', time()),
+				'log_date_gmt'			 => gmdate('Y-m-d H:i:s', time()),
 				'date_created'       => $subscription->get_date_created()->date( 'Y-m-d H:i:s' ),
 				'date_paid'          => $subscription->get_date_paid() ? $subscription->get_date_paid()->date( 'Y-m-d H:i:s' ) : null,
 				'date_completed'     => $subscription->get_date_completed() ? $subscription->get_date_completed()->date( 'Y-m-d H:i:s' ) : null,

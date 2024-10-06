@@ -53,7 +53,7 @@ class RenewalsReportTable extends Component {
 			},
 			{
 				label: __( 'Projected Revenue', 'sos-analytics' ),
-				key: 'revenue',
+				key: 'net_revenue',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
@@ -65,17 +65,17 @@ class RenewalsReportTable extends Component {
 				isSortable: true,
 				isNumeric: true,
 			},
+			{
+				label: __( 'Renewal Items', 'sos-analytics' ),
+				key: 'renewal_items',
+				required: false,
+				isSortable: true,
+				isNumeric: true,
+			},
 		];
 	}
 
 	getRowsContent( data = [] ) {
-		/*
-		const dateFormat = getAdminSetting(
-			'dateFormat',
-			defaultTableDateFormat
-		);
-		*/
-
 		const dateFormat = defaultTableDateFormat;
 		const {
 			formatAmount,
@@ -85,8 +85,7 @@ class RenewalsReportTable extends Component {
 		} = this.context;
 
 		return data.map( ( row ) => {
-			const { revenue: revenue, renewal_count: totalRenewals } =
-				row.subtotals;
+			const { net_revenue, renewal_count, renewal_items } = row.subtotals;
 			// @todo How to create this per-report? Can use `w`, `year`, `m` to build time-specific order links
 			// we need to know which kind of report this is, and parse the `label` to get this row's date
 			return [
@@ -100,25 +99,29 @@ class RenewalsReportTable extends Component {
 					value: row.date_start,
 				},
 				{
-					display: renderCurrency( revenue ),
-					value: getCurrencyFormatDecimal( revenue ),
+					display: renderCurrency( net_revenue ),
+					value: getCurrencyFormatDecimal( net_revenue ),
 				},
 				{
-					display: parseInt( totalRenewals ),
-					value: totalRenewals,
+					display: parseInt( renewal_count ),
+					value: renewal_count,
+				},
+				{
+					display: parseInt( renewal_items ),
+					value: renewal_items,
 				},
 			];
 		} );
 	}
 
 	getSummary( totals, totalResults = 0 ) {
-		const { revenue, renewal_count } = totals;
+		const { net_revenue, renewal_count } = totals;
 		const { formatAmount, getCurrencyConfig } = this.context;
 		const currency = getCurrencyConfig();
 		return [
 			{
 				label: __( 'Projected Revenue', 'sos-analytics' ),
-				value: formatAmount( currency, 'number', revenue ),
+				value: formatAmount( currency, 'number', net_revenue ),
 			},
 			{
 				label: __( 'Total Renewals', 'sos-analytics' ),

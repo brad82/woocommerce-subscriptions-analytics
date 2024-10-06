@@ -30,7 +30,6 @@ class Segmenter extends ReportsSegmenter {
 			'total_sales'    => "SUM($products_table.product_gross_revenue) AS total_sales",
 			'coupons'        => 'SUM( coupon_lookup_left_join.discount_amount ) AS coupons',
 			'coupons_count'  => 'COUNT( DISTINCT( coupon_lookup_left_join.coupon_id ) ) AS coupons_count',
-			'refunds'        => "SUM( CASE WHEN $products_table.product_gross_revenue < 0 THEN $products_table.product_gross_revenue ELSE 0 END ) AS refunds",
 			'taxes'          => "SUM($products_table.tax_amount) AS taxes",
 			'shipping'       => "SUM($products_table.shipping_amount) AS shipping",
 			'net_revenue'    => "SUM($products_table.product_net_revenue) AS net_revenue",
@@ -67,7 +66,7 @@ class Segmenter extends ReportsSegmenter {
 	 *
 	 * @return array Column => SELECT query mapping.
 	 */
-	protected function segment_selections_Subscriptions( $order_stats_table, $overrides = array() ) {
+	protected function segment_selections_subscriptions( $order_stats_table, $overrides = array() ) {
 		$columns_mapping = array(
 			'num_items_sold'      => "SUM($order_stats_table.num_items_sold) as num_items_sold",
 			'total_sales'         => "SUM($order_stats_table.total_sales) AS total_sales",
@@ -77,7 +76,7 @@ class Segmenter extends ReportsSegmenter {
 			'taxes'               => "SUM($order_stats_table.tax_total) AS taxes",
 			'shipping'            => "SUM($order_stats_table.shipping_total) AS shipping",
 			'net_revenue'         => "SUM($order_stats_table.net_total) AS net_revenue",
-			'Subscriptions_count' => "COUNT($order_stats_table.order_id) AS Subscriptions_count",
+			'subscriptions_count' => "COUNT($order_stats_table.order_id) AS Subscriptions_count",
 			'avg_items_per_order' => "AVG($order_stats_table.num_items_sold) AS avg_items_per_order",
 			'avg_order_value'     => "SUM($order_stats_table.net_total) / COUNT($order_stats_table.order_id) AS avg_order_value",
 			'total_customers'     => "COUNT( DISTINCT( $order_stats_table.customer_id ) ) AS total_customers",
@@ -353,7 +352,7 @@ class Segmenter extends ReportsSegmenter {
 		}
 
 		$product_segmenting_table   = $wpdb->prefix . 'wc_order_product_lookup';
-		$unique_Subscriptions_table = 'uniq_Subscriptions';
+		$unique_Subscriptions_table = 'uniq_subscriptions';
 		$segmenting_from            = "LEFT JOIN {$wpdb->prefix}wc_order_coupon_lookup AS coupon_lookup_left_join ON ($table_name.order_id = coupon_lookup_left_join.order_id) ";
 		$segmenting_where           = '';
 

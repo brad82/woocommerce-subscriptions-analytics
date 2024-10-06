@@ -3,7 +3,7 @@
  */
 import { __, _x } from '@wordpress/i18n';
 import { applyFilters } from '@wordpress/hooks';
-
+import * as dayjs from 'dayjs';
 /**
  * Internal dependencies
  */
@@ -21,8 +21,9 @@ const SUBSCRIPTION_REPORT_ADVANCED_FILTERS_FILTER =
  */
 
 function before( months ) {
-	const now = new Date();
-	return new Date( now.setMonth( now.getMonth() + months ) ).toISOString();
+	const now = dayjs();
+	const then = now.add( months, 'month' );
+	return then.toISOString();
 }
 /**
  * Subscription Report charts filter.
@@ -33,6 +34,14 @@ function before( months ) {
 
 export const charts = applyFilters( SUBSCRIPTION_REPORT_CHARTS_FILTER, [
 	{
+		key: 'net_revenue',
+		label: __( 'Projected Revenue', 'woocommerce-admin' ),
+		order: 'desc',
+		orderby: 'net_revenue',
+		type: 'currency',
+		isReverseTrend: false,
+	},
+	{
 		key: 'renewal_count',
 		label: __( 'Renewals', 'woocommerce-admin' ),
 		order: 'desc',
@@ -41,11 +50,11 @@ export const charts = applyFilters( SUBSCRIPTION_REPORT_CHARTS_FILTER, [
 		isReverseTrend: false,
 	},
 	{
-		key: 'revenue',
-		label: __( 'Projected Revenue', 'woocommerce-admin' ),
+		key: 'renewal_items',
+		label: __( 'Renewal Items', 'woocommerce-admin' ),
 		order: 'desc',
-		orderby: 'revenue',
-		type: 'currency',
+		orderby: 'renewal_items',
+		type: 'number',
 		isReverseTrend: false,
 	},
 ] );
@@ -167,15 +176,15 @@ if ( Object.keys( advancedFilters.filters ).length ) {
  */
 export const filters = applyFilters( SUBSCRIPTION_REPORT_FILTERS_FILTER, [
 	{
-		label: __( 'Period', 'woocommerce-admin' ),
+		label: __( 'Period End', 'woocommerce-admin' ),
 		staticParams: [ 'chartType', 'paged', 'per_page' ],
-		param: 'before',
+		param: 'until',
 		showFilters: () => filterValues.length > 0,
 		defaultValue: before( 3 ),
 		filters: [
 			{ label: 'Next 3 Months', value: before( 3 ) },
 			{ label: 'Next 6 Months', value: before( 6 ) },
-			{ label: 'Next 12 Months', value: before( 1 ) },
+			{ label: 'Next 12 Months', value: before( 12 ) },
 		],
 	},
 	{

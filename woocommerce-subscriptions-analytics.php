@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Woocommerce Subscriptions Analytics
  * Description: Adds extended analytics to WooCommerce for Subscriptions
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Supreme Online Solutions
  * Author URI: https://supremeonline.solutions
  * Text Domain: sos-analytics
