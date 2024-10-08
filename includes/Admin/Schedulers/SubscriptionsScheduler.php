@@ -10,7 +10,6 @@ defined( 'ABSPATH' ) || exit;
 use WC_Subscription;
 use SOS\Analytics\Admin\API\Reports\Subscriptions\Stats\DataStore as SubscriptionsStatsDataStore;
 use SOS\Analytics\Admin\API\Reports\Renewals\Stats\DataStore as RenewalsStatsDataStore;
-use Automattic\WooCommerce\Admin\API\Reports\Cache as ReportsCache;
 
 /**
  * SubscriptionsScheduler Class.
@@ -35,6 +34,7 @@ class SubscriptionsScheduler {
 		add_action( 'woocommerce_subscription_date_updated', array( static::class, 'subscripion_dates_changed' ), 10, 2 );
 
 		SubscriptionsStatsDataStore::init();
+		RenewalsStatsDataStore::init();
 	}
 
 	/**
@@ -46,7 +46,6 @@ class SubscriptionsScheduler {
 	 */
 	public static function status_changed( WC_Subscription $subscription, string $new_status ) {
 		self::guard_import( $subscription, $new_status );
-		ReportsCache::invalidate();
 	}
 
 	/**
@@ -58,7 +57,6 @@ class SubscriptionsScheduler {
 	public static function trial_ended_naturally( $subscription_id ) {
 		$subscription = new WC_Subscription( $subscription_id );
 		self::guard_import( $subscription, 'trial-expired' );
-		ReportsCache::invalidate();
 	}
 
 	/**
@@ -70,7 +68,6 @@ class SubscriptionsScheduler {
 	 */
 	public static function subscription_switched( WC_Subscription $subscription ) {
 		self::guard_import( $subscription, 'switched' );
-		ReportsCache::invalidate();
 	}
 
 	/**
@@ -84,9 +81,8 @@ class SubscriptionsScheduler {
 		if ( $date_type != 'next_payment' ) {
 			return;
 		}
-		
-		RenewalsStatsDataStore::update($subscription, $date_type);
-		ReportsCache::invalidate();
+
+		return as_enqueue_async_action('sos_analytics_data_store_sync_renewal', array($subscription, $date_type), 'sos_analytics');
 	}
 
 	/**
@@ -107,6 +103,6 @@ class SubscriptionsScheduler {
 			return;
 		}
 
-		return SubscriptionsStatsDataStore::sync_subscription( $subscription, $new_status );
+		return as_enqueue_async_action('sos_analytics_data_store_sync_subscription', array($subscription, $new_status), 'sos_analytics');
 	}
 }

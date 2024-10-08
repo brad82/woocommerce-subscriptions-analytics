@@ -4,6 +4,7 @@ namespace SOS\Analytics\Admin\API\Reports\Renewals\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
+use Automattic\WooCommerce\Admin\API\Reports\Cache as ReportsCache;
 use Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
 use Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
@@ -219,6 +220,13 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		}
 	}
 
+	/**
+	 * Set up all the hooks for maintaining and populating table data.
+	 */
+	public static function init() {
+		add_action('sos_analytics_data_store_sync_renewal', array(__CLASS__, 'update'), 50, 2);
+		add_action('sos_analytics_data_store_sync_renewal', array(ReportsCache::class, 'invalidate'), 200);
+	}
 	/**
 	 * Returns the report data based on parameters supplied by the user.
 	 *
