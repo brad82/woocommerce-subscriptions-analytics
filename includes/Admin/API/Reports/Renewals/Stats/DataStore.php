@@ -4,6 +4,7 @@ namespace SOS\Analytics\Admin\API\Reports\Renewals\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
+use WC_Subscription;
 use Automattic\WooCommerce\Admin\API\Reports\Cache as ReportsCache;
 use Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
@@ -460,14 +461,18 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
 	}
 
+
 	/**
 	 * Add subscription information to the lookup table when subscriptions are created or modified.
 	 *
 	 * @param int    $post_id Post ID.
-	 * @param string $date_type Object date type.
+	 * @param string $event the event to log.
 	 * @return int|bool Returns -1 if subscription won't be processed, or a boolean indicating processing success.
 	 */
-	public static function sync_subscription( $subscription, string $date_type ) {
+	public static function sync_subscription( $subscription, string $event ) {
+		if ( is_numeric( $subscription ) ) {
+			$subscription = new WC_Subscription( $subscription, $event );
+		}
 		return self::update( $subscription, $event );
 	}
 

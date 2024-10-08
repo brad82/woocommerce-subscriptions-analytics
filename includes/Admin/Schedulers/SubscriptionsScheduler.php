@@ -82,7 +82,7 @@ class SubscriptionsScheduler {
 			return;
 		}
 
-		return as_enqueue_async_action('sos_analytics_data_store_sync_renewal', array($subscription, $date_type), 'sos_analytics');
+		return as_enqueue_async_action('sos_analytics_data_store_sync_renewal', array($subscription->get_id(), $date_type), 'sos_analytics');
 	}
 
 	/**
@@ -103,6 +103,6 @@ class SubscriptionsScheduler {
 			return;
 		}
 
-		return as_enqueue_async_action('sos_analytics_data_store_sync_subscription', array($subscription, $new_status), 'sos_analytics');
+		return as_enqueue_async_action('sos_analytics_data_store_sync_subscription', array($subscription->get_id(), $new_status), 'sos_analytics');
 	}
 }

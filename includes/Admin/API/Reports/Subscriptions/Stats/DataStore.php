@@ -4,8 +4,7 @@ namespace SOS\Analytics\Admin\API\Reports\Subscriptions\Stats;
 
 defined( 'ABSPATH' ) || exit;
 
-use WC_Order;
-
+use WC_Subscription;
 use Automattic\WooCommerce\Admin\API\Reports\Cache as ReportsCache;
 use Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
@@ -13,7 +12,6 @@ use Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
 use Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
 use Automattic\WooCommerce\Admin\API\Reports\Customers\DataStore as CustomersDataStore;
 use Automattic\WooCommerce\Utilities\OrderUtil;
-use DateTime;
 
 /**
  * API\Reports\Subscriptions\Stats\DataStore.
@@ -132,8 +130,8 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		add_action( 'woocommerce_before_delete_order', array( __CLASS__, 'delete_subscription' ) );
 		add_action( 'delete_post', array( __CLASS__, 'delete_subscription' ) );
 
-		add_action('sos_analytics_data_store_sync_subscription', array(__CLASS__, 'sync_subscription'), 50, 2);
-		add_action('sos_analytics_data_store_sync_subscription', array(ReportsCache::class, 'invalidate'), 200);
+		add_action( 'sos_analytics_data_store_sync_subscription', array( __CLASS__, 'sync_subscription' ), 50, 2 );
+		add_action( 'sos_analytics_data_store_sync_subscription', array( ReportsCache::class, 'invalidate' ), 200) ;
 	}
 
 	/**
@@ -511,6 +509,9 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @return int|bool Returns -1 if subscription won't be processed, or a boolean indicating processing success.
 	 */
 	public static function sync_subscription( $subscription, string $event ) {
+		if ( is_numeric( $subscription ) ) {
+			$subscription = new WC_Subscription( $subscription );
+		}
 		return self::update( $subscription, $event );
 	}
 
