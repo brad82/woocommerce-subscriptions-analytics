@@ -417,7 +417,6 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				$this->interval_query->get_query_statement(),
 				ARRAY_A
 			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
-
 			if ( null === $intervals ) {
 				return new \WP_Error( 'sos_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
 			}
@@ -510,7 +509,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	public static function sync_subscription( $subscription, string $event ) {
 		if ( is_numeric( $subscription ) ) {
-			$subscription = new WC_Subscription( $subscription );
+			$subscription = wcs_get_subscription( $subscription );
 		}
 		return self::update( $subscription, $event );
 	}
@@ -568,6 +567,8 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			'%d',
 			'%d',
 			'%d',
+			'%s',
+			'%s',
 			'%s',
 			'%s',
 			'%s',

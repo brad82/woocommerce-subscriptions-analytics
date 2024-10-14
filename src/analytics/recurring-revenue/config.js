@@ -23,10 +23,10 @@ const RECURRENT_REVENUE_REPORT_ADVANCED_FILTERS_FILTER =
  */
 export const charts = applyFilters( RECURRENT_REVENUE_REPORT_CHARTS_FILTER, [
 	{
-		key: 'average_revenue_per_customer',
+		key: 'arpu',
 		label: __( 'ARPU/ARPC', 'sos-analytics' ),
 		order: 'desc',
-		orderby: 'gross_sales',
+		orderby: 'arpu',
 		type: 'currency',
 		isReverseTrend: false,
 	},
@@ -42,7 +42,7 @@ export const charts = applyFilters( RECURRENT_REVENUE_REPORT_CHARTS_FILTER, [
 		key: 'mrr',
 		label: __( 'MRR', 'sos-analytics' ),
 		order: 'desc',
-		orderby: 'coupons',
+		orderby: 'mrr',
 		type: 'currency',
 		isReverseTrend: false,
 	},
@@ -50,7 +50,7 @@ export const charts = applyFilters( RECURRENT_REVENUE_REPORT_CHARTS_FILTER, [
 		key: 'arr',
 		label: __( 'ARR', 'sos-analytics' ),
 		orderby: 'arr',
-		type: 'currency',
+		type: 'arr',
 		isReverseTrend: false,
 	},
 ] );

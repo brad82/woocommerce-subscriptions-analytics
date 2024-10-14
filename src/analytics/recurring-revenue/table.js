@@ -30,16 +30,7 @@ import { CurrencyContext } from '../../lib/currency-context';
 
 const EMPTY_ARRAY = [];
 
-const summaryFields = [
-	'orders_count',
-	'gross_sales',
-	'total_sales',
-	'refunds',
-	'coupons',
-	'taxes',
-	'shipping',
-	'net_revenue',
-];
+const summaryFields = [];
 
 class Recurrent_revenueReportTable extends Component {
 	constructor() {
@@ -61,57 +52,29 @@ class Recurrent_revenueReportTable extends Component {
 				isSortable: true,
 			},
 			{
-				label: __( 'Orders', 'sos-analytics' ),
-				key: 'orders_count',
+				label: __( 'Total Customers', 'sos-analytics' ),
+				key: 'total_customers',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
 			},
 			{
-				label: __( 'Gross sales', 'sos-analytics' ),
-				key: 'gross_sales',
+				label: __( 'ARPU', 'sos-analytics' ),
+				key: 'arpu',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
 			},
 			{
-				label: __( 'Returns', 'sos-analytics' ),
-				key: 'refunds',
+				label: __( 'MRR', 'sos-analytics' ),
+				key: 'mrr',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
 			},
 			{
-				label: __( 'Coupons', 'sos-analytics' ),
-				key: 'coupons',
-				required: false,
-				isSortable: true,
-				isNumeric: true,
-			},
-			{
-				label: __( 'Net sales', 'sos-analytics' ),
-				key: 'net_revenue',
-				required: false,
-				isSortable: true,
-				isNumeric: true,
-			},
-			{
-				label: __( 'Taxes', 'sos-analytics' ),
-				key: 'taxes',
-				required: false,
-				isSortable: true,
-				isNumeric: true,
-			},
-			{
-				label: __( 'Shipping', 'sos-analytics' ),
-				key: 'shipping',
-				required: false,
-				isSortable: true,
-				isNumeric: true,
-			},
-			{
-				label: __( 'Total sales', 'sos-analytics' ),
-				key: 'total_sales',
+				label: __( 'ARR', 'sos-analytics' ),
+				key: 'arr',
 				required: false,
 				isSortable: true,
 				isNumeric: true,
@@ -137,32 +100,13 @@ class Recurrent_revenueReportTable extends Component {
 
 		return data.map( ( row ) => {
 			const {
-				coupons,
-				gross_sales: grossSales,
-				total_sales: totalSales,
-				net_revenue: netRevenue,
-				orders_count: ordersCount,
-				refunds,
-				shipping,
-				taxes,
+				total_customers: totalCustomers,
+				arpu,
+				mrr,
+				arr,
 			} = row.subtotals;
 			// @todo How to create this per-report? Can use `w`, `year`, `m` to build time-specific order links
 			// we need to know which kind of report this is, and parse the `label` to get this row's date
-			const orderLink = (
-				<Link
-					href={
-						'edit.php?post_type=shop_order&m=' +
-						formatDate( 'Ymd', row.date_start )
-					}
-					type="wp-admin"
-				>
-					{ formatValue(
-						getCurrencyConfig(),
-						'number',
-						ordersCount
-					) }
-				</Link>
-			);
 			return [
 				{
 					display: (
@@ -174,36 +118,20 @@ class Recurrent_revenueReportTable extends Component {
 					value: row.date_start,
 				},
 				{
-					display: orderLink,
-					value: Number( ordersCount ),
+					display: totalCustomers,
+					value: Number( totalCustomers ),
 				},
 				{
-					display: renderCurrency( grossSales ),
-					value: getCurrencyFormatDecimal( grossSales ),
+					display: renderCurrency( arpu ),
+					value: getCurrencyFormatDecimal( arpu ),
 				},
 				{
-					display: formatAmount( refunds ),
-					value: getCurrencyFormatDecimal( refunds ),
+					display: formatAmount( mrr ),
+					value: getCurrencyFormatDecimal( mrr ),
 				},
 				{
-					display: formatAmount( coupons ),
-					value: getCurrencyFormatDecimal( coupons ),
-				},
-				{
-					display: renderCurrency( netRevenue ),
-					value: getCurrencyFormatDecimal( netRevenue ),
-				},
-				{
-					display: renderCurrency( taxes ),
-					value: getCurrencyFormatDecimal( taxes ),
-				},
-				{
-					display: renderCurrency( shipping ),
-					value: getCurrencyFormatDecimal( shipping ),
-				},
-				{
-					display: renderCurrency( totalSales ),
-					value: getCurrencyFormatDecimal( totalSales ),
+					display: formatAmount( arr ),
+					value: getCurrencyFormatDecimal( arr ),
 				},
 			];
 		} );
@@ -211,14 +139,10 @@ class Recurrent_revenueReportTable extends Component {
 
 	getSummary( totals, totalResults = 0 ) {
 		const {
-			orders_count: ordersCount = 0,
-			gross_sales: grossSales = 0,
-			total_sales: totalSales = 0,
-			refunds = 0,
-			coupons = 0,
-			taxes = 0,
-			shipping = 0,
-			net_revenue: netRevenue = 0,
+			total_customers: totalCustomers = 0,
+			arpu: arpu = 0,
+			mrr: mrr = 0,
+			arr: arr = 0,
 		} = totals;
 		const { formatAmount, getCurrencyConfig } = this.context;
 		const currency = getCurrencyConfig();
@@ -226,38 +150,6 @@ class Recurrent_revenueReportTable extends Component {
 			{
 				label: _n( 'day', 'days', totalResults, 'sos-analytics' ),
 				value: formatValue( currency, 'number', totalResults ),
-			},
-			{
-				label: _n( 'order', 'orders', ordersCount, 'sos-analytics' ),
-				value: formatValue( currency, 'number', ordersCount ),
-			},
-			{
-				label: __( 'Gross sales', 'sos-analytics' ),
-				value: formatAmount( grossSales ),
-			},
-			{
-				label: __( 'Returns', 'sos-analytics' ),
-				value: formatAmount( refunds ),
-			},
-			{
-				label: __( 'Coupons', 'sos-analytics' ),
-				value: formatAmount( coupons ),
-			},
-			{
-				label: __( 'Net sales', 'sos-analytics' ),
-				value: formatAmount( netRevenue ),
-			},
-			{
-				label: __( 'Taxes', 'sos-analytics' ),
-				value: formatAmount( taxes ),
-			},
-			{
-				label: __( 'Shipping', 'sos-analytics' ),
-				value: formatAmount( shipping ),
-			},
-			{
-				label: __( 'Total sales', 'sos-analytics' ),
-				value: formatAmount( totalSales ),
 			},
 		];
 	}

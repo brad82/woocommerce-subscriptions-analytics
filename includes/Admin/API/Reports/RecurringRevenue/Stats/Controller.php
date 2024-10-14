@@ -38,22 +38,6 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 		$args['order']               = $request['order'];
 		$args['fields']              = $request['fields'];
 		$args['match']               = $request['match'];
-		$args['status_is']           = (array) $request['status_is'];
-		$args['status_is_not']       = (array) $request['status_is_not'];
-		$args['product_includes']    = (array) $request['product_includes'];
-		$args['product_excludes']    = (array) $request['product_excludes'];
-		$args['variation_includes']  = (array) $request['variation_includes'];
-		$args['variation_excludes']  = (array) $request['variation_excludes'];
-		$args['coupon_includes']     = (array) $request['coupon_includes'];
-		$args['coupon_excludes']     = (array) $request['coupon_excludes'];
-		$args['tax_rate_includes']   = (array) $request['tax_rate_includes'];
-		$args['tax_rate_excludes']   = (array) $request['tax_rate_excludes'];
-		$args['customer_type']       = $request['customer_type'];
-		$args['refunds']             = $request['refunds'];
-		$args['attribute_is']        = (array) $request['attribute_is'];
-		$args['attribute_is_not']    = (array) $request['attribute_is_not'];
-		$args['category_includes']   = (array) $request['categories'];
-		$args['segmentby']           = $request['segmentby'];
 		$args['force_cache_refresh'] = $request['force_cache_refresh'];
 
 		// For backwards compatibility, `customer` is aliased to `customer_type`.
@@ -64,36 +48,28 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 		return $args;
 	}
 
-	/**
+		/**
 	 * Get all reports.
 	 *
 	 * @param WP_REST_Request $request Request data.
 	 * @return array|WP_Error
 	 */
 	public function get_items( $request ) {
-		$query_args     = $this->prepare_reports_query( $request );
-		$renewals_query = new Query( $query_args );
+		$query_args   = $this->prepare_reports_query( $request );
+		$orders_query = new Query( $query_args );
 		try {
-			$report_data = $renewals_query->get_data();
+			$report_data = $orders_query->get_data();
 		} catch ( ParameterException $e ) {
 			return new \WP_Error( $e->getErrorCode(), $e->getMessage(), array( 'status' => $e->getCode() ) );
 		}
 
 		$out_data = array(
-			'totals'    => $report_data->totals,
+			'totals'    => get_object_vars( $report_data->totals ),
 			'intervals' => array(),
 		);
 
-		foreach ( $report_data->intervals as $interval => $subtotals ) {
-			$item = array(
-				'date_end'       => $interval . ' 23:59:59',
-				'date_end_gmt'   => $interval . ' 23:59:59',
-				'date_start'     => $interval . ' 00:00:00',
-				'date_start_gmt' => $interval . ' 00:00:00',
-				'subtotals'      => $subtotals,
-			);
-
-			$item                    = $this->prepare_item_for_response( $item, $request );
+		foreach ( $report_data->intervals as $interval_data ) {
+			$item                    = $this->prepare_item_for_response( $interval_data, $request );
 			$out_data['intervals'][] = $this->prepare_response_for_collection( $item );
 		}
 
@@ -118,7 +94,7 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
 		$data    = $this->add_additional_fields_to_object( $data, $request );
-		// $data    = $this->filter_response_by_context( $data, $context );
+		$data    = $this->filter_response_by_context( $data, $context );
 
 		// Wrap the data in a response object.
 		$response = rest_ensure_response( $data );
@@ -128,12 +104,11 @@ class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 		 *
 		 * Allows modification of the report data right before it is returned.
 		 *
-		 * @since 0.1.0
 		 * @param WP_REST_Response $response The response object.
 		 * @param object           $report   The original report object.
 		 * @param WP_REST_Request  $request  Request used to generate the response.
 		 */
-		return apply_filters( 'woocommerce_rest_prepare_report_renewals_stats', $response, $report, $request );
+		return apply_filters( 'woocommerce_rest_prepare_report_orders_stats', $response, $report, $request );
 	}
 
 	/**

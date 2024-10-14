@@ -9,6 +9,7 @@ use function wcs_get_subscriptions;
 
 use Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
+use Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
 use Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
 
 /**
@@ -48,10 +49,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @var array
 	 */
 	protected $column_types = array(
-		'count_total_customers' => 'intval',
-		'calculated_arpu'       => 'floatval',
-		'calculated_mrr'        => 'floatval',
-		'calculated_mrr'        => 'floatval',
+		'total_customers' => 'intval',
+		'arpu'       => 'floatval',
+		'arr'        => 'floatval',
+		'mrr'        => 'floatval',
 	);
 
 	/**
@@ -74,10 +75,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	protected function assign_report_columns() {
 		$this->report_columns = array(
-			'total_customers' => 'count_total_customers as total_customers',
-			'arpu'            => 'calculated_arpu as arpu',
-			'mrr'             => 'calculated_mrr as mmr',
-			'mrr'             => 'calculated_arr as amr',
+			'total_customers' => 'count_total_customers AS total_customers',
+			'arpu'            => 'calculated_arpu AS arpu',
+			'mrr'             => 'calculated_mrr AS mrr',
+			'arr'             => 'calculated_arr AS arr',
 		);
 	}
 
@@ -102,11 +103,11 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$defaults = array(
 			'per_page'  => get_option( 'posts_per_page' ),
 			'page'      => 1,
-			// 'order'             => 'DESC',
-			// 'orderby'           => 'date',
-			// 'before'            => TimeInterval::default_before(),
-			// 'after'             => TimeInterval::default_after(),
-			'interval'  => 'week',
+			'order'             => 'DESC',
+			'orderby'           => 'date',
+			'before'            => TimeInterval::default_before(),
+			'after'             => TimeInterval::default_after(),
+			'interval'  => 'day',
 			'fields'    => '*',
 			'segmentby' => '',
 		);
@@ -117,7 +118,75 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$cache_key = $this->get_cache_key( $query_args );
 		$data      = $this->get_cached_data( $cache_key );
 
-		if ( false === $data ) {
+		if ( false === $data || true ) {
+			$this->initialize_queries();
+
+			$selections = $this->selected_columns( $query_args );
+
+			$where_time  = $this->get_sql_clause( 'where_time' );
+			$params      = $this->get_limit_sql_params( $query_args );
+
+			$this->total_query->add_sql_clause( 'select', $selections );
+			$this->total_query->add_sql_clause( 'limit' , 'LIMIT 1');
+			$this->total_query->add_sql_clause( 'order_by' , $table_name . '.`' . $this->date_column_name . '` DESC');
+			$totals = $wpdb->get_results(
+				$this->total_query->get_query_statement(),
+				ARRAY_A
+			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
+			if ( null === $totals ) {
+				return new \WP_Error( 'sos_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
+			}
+
+			$totals = (object) $this->cast_numbers( $totals[0] );
+
+			$this->interval_query->add_sql_clause( 'select', $this->date_column_name . ' AS time_interval' );
+			//$this->interval_query->add_sql_clause( 'left_join', $coupon_join );
+			$this->interval_query->add_sql_clause( 'where_time', $where_time );
+			$db_intervals = $wpdb->get_col(
+				$this->interval_query->get_query_statement()
+			); // phpcs:ignore cache ok, DB call ok, , unprepared SQL ok.
+
+			$db_interval_count       = count( $db_intervals );
+			$expected_interval_count = TimeInterval::intervals_between( $query_args['after'], $query_args['before'], $query_args['interval'] );
+			$total_pages             = (int) ceil( $expected_interval_count / $params['per_page'] );
+
+			if ( $query_args['page'] < 1 || $query_args['page'] > $total_pages ) {
+				return $data;
+			}
+
+			$this->update_intervals_sql_params( $query_args, $db_interval_count, $expected_interval_count, $table_name );
+			$this->interval_query->add_sql_clause( 'order_by', $this->get_sql_clause( 'order_by' ) );
+			$this->interval_query->add_sql_clause( 'limit', $this->get_sql_clause( 'limit' ) );
+			$this->interval_query->add_sql_clause( 'select', ", {$table_name}.date AS datetime_anchor" );
+			if ( '' !== $selections ) {
+				$this->interval_query->add_sql_clause( 'select', ', ' . $selections );
+			}
+			$intervals = $wpdb->get_results(
+				$this->interval_query->get_query_statement(),
+				ARRAY_A
+			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
+			if ( null === $intervals ) {
+				return new \WP_Error( 'sos_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce' ) );
+			}
+			
+			$data = (object) array(
+				'totals'    => $totals,
+				'intervals' => $intervals,
+				'total'     => $expected_interval_count,
+				'pages'     => $total_pages,
+				'page_no'   => (int) $query_args['page'],
+			);
+
+			if ( TimeInterval::intervals_missing( $expected_interval_count, $db_interval_count, $params['per_page'], $query_args['page'], $query_args['order'], $query_args['orderby'], count( $intervals ) ) ) {
+				$this->fill_in_missing_intervals( $db_intervals, $query_args['adj_after'], $query_args['adj_before'], $query_args['interval'], $data );
+				$this->sort_intervals( $data, $query_args['orderby'], $query_args['order'] );
+				$this->remove_extra_records( $data, $query_args['page'], $params['per_page'], $db_interval_count, $expected_interval_count, $query_args['orderby'], $query_args['order'] );
+			} else {
+				$this->update_interval_boundary_dates( $query_args['after'], $query_args['before'], $query_args['interval'], $data->intervals );
+			}
+
+			$this->create_interval_subtotals( $data->intervals );
+
 			$this->set_cached_data( $cache_key, $data );
 		}
 
@@ -238,6 +307,6 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 
 		$this->interval_query = new SqlQuery( $this->context . '_interval' );
 		$this->interval_query->add_sql_clause( 'from', self::get_db_table_name() );
-		$this->interval_query->add_sql_clause( 'group_by', 'time_interval' );
+		//$this->interval_query->add_sql_clause( 'group_by', 'time_interval' );
 	}
 }

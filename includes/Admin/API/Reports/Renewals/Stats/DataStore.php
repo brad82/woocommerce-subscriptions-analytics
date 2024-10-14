@@ -471,7 +471,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	public static function sync_subscription( $subscription, string $event ) {
 		if ( is_numeric( $subscription ) ) {
-			$subscription = new WC_Subscription( $subscription, $event );
+			$subscription = wcs_get_subscription($subscription);
 		}
 		return self::update( $subscription, $event );
 	}
